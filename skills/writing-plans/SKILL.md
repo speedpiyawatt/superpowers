@@ -35,21 +35,28 @@ This structure informs the task decomposition. Each task should produce self-con
 
 ## Task Right-Sizing
 
-A task is the smallest unit that carries its own test cycle and is worth a
-fresh reviewer's gate. When drawing task boundaries: fold setup,
-configuration, scaffolding, and documentation steps into the task whose
-deliverable needs them; split only where a reviewer could meaningfully
-reject one task while approving its neighbor. Each task ends with an
-independently testable deliverable.
+A task owns one cohesive outcome and one acceptance cycle. Split when
+independent interfaces, proof cycles, or ownership boundaries exist, or when a
+reviewer could approve one part while rejecting another. Do not split tightly
+coupled edits merely to reduce file count.
+
+Every task declares:
+
+- **Executor:** `parent | dumb-worker | worker`
+- **Leaf class:** `parent | mechanical | integration`
+- **Proof mode:** `tdd | verification | experiment`
+
+Use `parent` for unresolved product/API/architecture decisions and shared
+foundations. Use `dumb-worker` only when decisions and code shape are locked,
+the task touches at most two production files, and one named RED/GREEN cycle
+proves the result. Use `worker` for coupled or judgment-heavy implementation
+after decisions are locked. Parallel writers never overlap paths.
 
 ## Bite-Sized Task Granularity
 
-**Each step is one action (2-5 minutes):**
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
-- "Commit" - step
+Within a task, each checkbox is one concrete action: write RED, observe the
+expected failure, implement minimum Change, run GREEN, then commit. Setup,
+configuration, and documentation stay with the behavior that needs them.
 
 ## Plan Document Header
 
@@ -79,7 +86,13 @@ include this section.]
 ## Task Structure
 
 ````markdown
-### Task N: [Component Name]
+### Task N: [Cohesive outcome]
+
+**Executor:** `parent | dumb-worker | worker`
+**Leaf class:** `parent | mechanical | integration`
+**Proof mode:** `tdd | verification | experiment`
+
+#### Target
 
 **Files:**
 - Create: `exact/path/to/file.py`
@@ -87,10 +100,13 @@ include this section.]
 - Test: `tests/exact/path/to/test.py`
 
 **Interfaces:**
-- Consumes: [what this task uses from earlier tasks — exact signatures]
-- Produces: [what later tasks rely on — exact function names, parameter
-  and return types. A task's implementer sees only their own task; this
-  block is how they learn the names and types neighboring tasks use.]
+- Consumes: [exact signatures from earlier tasks]
+- Produces: [exact signatures later tasks consume]
+
+**Ownership:** [paths/symbols this writer owns]
+**Non-goals:** [explicit exclusions]
+
+#### Change
 
 - [ ] **Step 1: Write the failing test**
 
@@ -100,22 +116,22 @@ def test_specific_behavior():
     assert result == expected
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: Run RED**
 
 Run: `pytest tests/path/test.py::test_name -v`
-Expected: FAIL with "function not defined"
+Expected: FAIL with `function not defined`, proving the named behavior is absent.
 
-- [ ] **Step 3: Write minimal implementation**
+- [ ] **Step 3: Write minimum implementation**
 
 ```python
 def function(input):
     return expected
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 4: Run GREEN**
 
 Run: `pytest tests/path/test.py::test_name -v`
-Expected: PASS
+Expected: PASS with the named assertions.
 
 - [ ] **Step 5: Commit**
 
@@ -123,6 +139,14 @@ Expected: PASS
 git add tests/path/test.py src/path/file.py
 git commit -m "feat: add specific feature"
 ```
+
+#### Acceptance
+
+- [ ] [Observable behavior and exact proof]
+- RED: [command and expected failing assertion/error for `tdd`]
+- GREEN: [command and expected assertions for `tdd`/`verification`]
+- Artifact: [path/result contract for `experiment`]
+- Escalate when: [missing decision, ownership conflict, or environment blocker]
 ````
 
 ## No Placeholders
@@ -150,6 +174,14 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 **2. Placeholder scan:** Search your plan for red flags — any of the patterns from the "No Placeholders" section above. Fix them.
 
 **3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
+
+**4. Change-to-Acceptance mapping:** Every Change item has observable evidence in Acceptance.
+
+**5. Leaf honesty:** Mechanical tasks require no inference, include complete code shape, and have one focused RED/GREEN cycle.
+
+**6. Task cohesion:** Split independent interfaces, proof cycles, or ownership boundaries; keep tightly coupled edits together.
+
+**7. Writer isolation:** Parallel tasks do not own overlapping files, and shared contracts precede dependent leaves.
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
 
