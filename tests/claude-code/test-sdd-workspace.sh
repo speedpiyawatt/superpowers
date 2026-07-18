@@ -76,7 +76,14 @@ main() {
 
 ## Task 1: First thing
 
-Do the first thing.
+#### Target
+- `first.py`
+
+#### Change
+1. Do the first thing.
+
+#### Acceptance
+- [ ] first thing passes
 PLAN
 
     local brief_out brief_path
