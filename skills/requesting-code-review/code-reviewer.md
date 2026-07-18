@@ -84,7 +84,7 @@ Subagent (general-purpose):
 
     **Ready to merge: Yes** requires all requirements met and zero Critical or
     Important findings. Minor findings may remain. Never use an intermediate
-    \"With fixes\" verdict; fixes are not merged until applied and re-reviewed.
+    "With fixes" verdict; fixes are not merged until applied and re-reviewed.
 
     ## Output Format
 
@@ -175,7 +175,7 @@ Subagent (general-purpose):
 
 ### Assessment
 
-**Ready to merge: With fixes**
+**Ready to merge: No**
 
-**Reasoning:** Core implementation is solid with good architecture and tests. Important issues (help text, date validation) are easily fixed and don't affect core functionality.
+**Reasoning:** Core implementation is solid, but the open Important issues must be fixed and re-reviewed before merge.
 ```

@@ -180,7 +180,7 @@ review — send it back to the implementer and re-review.
 | Any Critical or Important | Dispatch one fix task, then full task re-review |
 | Spec noncompliant | Fix requirements gap, then re-review |
 | Cannot verify | Parent resolves every item before completion |
-| Approved with Notes only | Record Notes and accept |
+| Approved with Minor findings only | Record Minor findings and accept |
 | Approved clean | Accept |
 
 Never mark a task complete when Critical or Important findings remain. An
@@ -424,10 +424,10 @@ Done!
 - Don't rush them into implementation
 
 **If reviewer finds issues:**
-- Implementer (same subagent) fixes them
-- Reviewer reviews again
-- Repeat until approved
-- Don't skip the re-review
+- Dispatch one focused fix task with every Critical and Important finding
+- Re-run covering focused proof and append it to the implementer report
+- Reviewer reviews the complete task again
+- Repeat until approved; never skip re-review
 
 **If subagent fails task:**
 - Dispatch fix subagent with specific instructions
