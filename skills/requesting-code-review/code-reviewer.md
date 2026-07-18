@@ -77,6 +77,15 @@ Subagent (general-purpose):
     If you find issues with the plan itself rather than the implementation,
     say so.
 
+    ## Verdict Mapping
+
+    **Ready to merge: No** when any Critical or Important finding remains, a
+    requirement is unmet, or required verification evidence is missing.
+
+    **Ready to merge: Yes** requires all requirements met and zero Critical or
+    Important findings. Minor findings may remain. Never use an intermediate
+    \"With fixes\" verdict; fixes are not merged until applied and re-reviewed.
+
     ## Output Format
 
     ### Strengths
@@ -104,7 +113,7 @@ Subagent (general-purpose):
 
     ### Assessment
 
-    **Ready to merge?** [Yes | No | With fixes]
+    **Ready to merge?** [Yes | No]
 
     **Reasoning:** [1-2 sentence technical assessment]
 

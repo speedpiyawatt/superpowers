@@ -129,13 +129,29 @@ that implementer. Single-file mechanical fixes also take the cheapest tier.
 - Touches multiple files with integration concerns → standard model
 - Requires design judgment or broad codebase understanding → most capable model
 
+## Implementer Report Gate
+
+Before handling an implementer status or generating a review package, read the
+report and require:
+
+- Status with valid semantics
+- Implemented Change items
+- exact commands, exit codes, and decisive output
+- observed pre-edit RED and post-edit GREEN for `tdd`
+- one Acceptance-matrix row per brief requirement
+- files changed, commits, self-review, and concerns
+
+Reject malformed DONE. A success status with FAIL/NOT_RUN acceptance, missing
+required proof, or edits outside Target becomes a fix/re-dispatch, not review.
+DONE_WITH_CONCERNS still requires all Acceptance items PASS.
+
 ## Handling Implementer Status
 
 Implementer subagents report one of four statuses. Handle each appropriately:
 
-**DONE:** Generate the review package (`scripts/review-package BASE HEAD`, from this skill's directory — it prints the unique file path it wrote; BASE is the commit you recorded before dispatching the implementer — never `HEAD~1`, which silently drops all but the last commit of a multi-commit task), then dispatch the task reviewer with the printed path.
+**DONE:** Only after the report gate passes, generate the review package (`scripts/review-package BASE HEAD`, from this skill's directory — it prints the unique file path it wrote; BASE is the commit you recorded before dispatching the implementer — never `HEAD~1`, which silently drops all but the last commit of a multi-commit task), then dispatch the task reviewer with the printed path.
 
-**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before review. If they're observations (e.g., "this file is getting large"), note them and proceed to review.
+**DONE_WITH_CONCERNS:** Require every Acceptance item PASS. Correctness, scope, ownership, or proof concerns must be resolved before review. Record genuinely non-blocking observations, then proceed to review.
 
 **NEEDS_CONTEXT:** The implementer needs information that wasn't provided. Provide the missing context and re-dispatch.
 
@@ -155,6 +171,21 @@ review, but you must resolve each one yourself before marking the task
 complete: you hold the plan and cross-task context the reviewer
 lacks. If you confirm an item is a real gap, treat it as a failed spec
 review — send it back to the implementer and re-review.
+
+## Reviewer Acceptance Matrix
+
+| Reviewer result | Controller action |
+|---|---|
+| Missing verdict fields | Re-dispatch reviewer with the same artifacts |
+| Any Critical or Important | Dispatch one fix task, then full task re-review |
+| Spec noncompliant | Fix requirements gap, then re-review |
+| Cannot verify | Parent resolves every item before completion |
+| Approved with Notes only | Record Notes and accept |
+| Approved clean | Accept |
+
+Never mark a task complete when Critical or Important findings remain. An
+approval label paired with either severity is contradictory and is treated as
+Needs Fixes.
 
 ## Constructing Reviewer Prompts
 
@@ -223,16 +254,15 @@ prints back — stays resident in your context for the rest of the session
 and is re-read on every later turn. Hand artifacts over as files:
 
 - **Task brief:** before dispatching an implementer, run this skill's
-  `scripts/task-brief PLAN_FILE N` — it extracts the task's full text to a
-  uniquely named file and prints the path. Compose the dispatch so the
-  brief stays the single source of requirements. Your dispatch should
-  contain: (1) one line on where this task fits in the project; (2) the
-  brief path, introduced as "read this first — it is your requirements,
-  with the exact values to use verbatim"; (3) interfaces and decisions
-  from earlier tasks that the brief cannot know; (4) your resolution of
-  any ambiguity you noticed in the brief; (5) the report-file path and
-  report contract. Exact values (numbers, magic strings, signatures, test
-  cases) appear only in the brief.
+  `scripts/task-brief PLAN_FILE N`. It validates Markdown fences, selects the
+  exact task number, requires Target/Change/Acceptance, appends Global
+  Constraints, writes the brief, and prints its path. Extraction failure is a
+  plan defect: fix the source plan and rerun; never paste a hand-built fallback.
+  Compose the dispatch so the brief stays the single source of requirements.
+  Include only: (1) one line on where the task fits; (2) the brief path,
+  introduced as the requirements source; (3) interfaces and decisions from
+  earlier tasks that the brief cannot know; and (4) the report-file path and
+  report contract. Exact values, signatures, and test cases stay in the brief.
 - **Report file:** name the implementer's report file after the brief
   (brief `…/task-N-brief.md` → report `…/task-N-report.md`) and put it in
   the dispatch prompt. The implementer writes the full report there and

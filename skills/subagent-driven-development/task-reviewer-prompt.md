@@ -75,6 +75,11 @@ Subagent (general-purpose):
     Warnings or other noise in the implementer's reported test output are
     findings — test output should be pristine.
 
+    Verify the report's Acceptance matrix against the brief and diff. Every
+    required item needs evidence. For `tdd`, confirm RED was observed before
+    production edits and failed for the expected gap; claimed chronology
+    without recorded command/output is missing evidence.
+
     ## Part 1: Spec Compliance
 
     Compare the diff against What Was Requested:
@@ -136,6 +141,17 @@ Subagent (general-purpose):
     Acknowledge what was done well before listing issues — accurate praise
     helps the implementer trust the rest of the feedback.
 
+    ## Verdict Mapping
+
+    **Needs fixes** is mandatory when any Critical or Important finding
+    exists, the implementation is spec-noncompliant, required Acceptance
+    evidence is missing, TDD chronology is unsupported, or Target/worktree
+    ownership was violated.
+
+    **Approved** requires spec compliance, complete Acceptance evidence, zero
+    Critical, and zero Important findings. Minor findings may remain. Never
+    emit Approved together with a Critical or Important finding.
+
     ## Output Format
 
     ### Spec Compliance
@@ -163,6 +179,15 @@ Subagent (general-purpose):
     **Task quality:** [Approved | Needs fixes]
 
     **Reasoning:** [1-2 sentence technical assessment]
+
+    VERDICT_KEYS:
+    spec=compliant|issues
+    quality=Approved|NeedsFixes
+    critical=N
+    important=N
+    minor=N
+    cannot_verify=N
+    plan_mandated=N
 ```
 
 **Placeholders:**

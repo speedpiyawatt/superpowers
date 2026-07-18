@@ -31,21 +31,24 @@ Subagent (general-purpose):
 
     ## Your Job
 
-    Once you're clear on requirements:
-    1. Implement exactly what the task specifies
-    2. Write tests (following TDD if task says to)
-    3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    Before edits:
+    1. Read the brief and parse Target, Change, and every Acceptance item.
+    2. Confirm the assigned worktree/directory, owned paths, proof mode, and
+       named proof.
+    3. Return NEEDS_CONTEXT before editing if scope, ownership, behavior, or
+       proof is incomplete.
 
-    Work from: [directory]
+    Work only from: [directory]
+    Edit only Target-owned paths. Preserve unexpected user changes.
 
-    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
-    It's always OK to pause and clarify. Don't guess or make assumptions.
+    For `tdd`, run the named RED before any production edit. Continue only
+    when it fails for the expected reason and record that output immediately.
+    Tests written or first run after implementation are not RED evidence.
 
-    While iterating, run the focused test for what you're changing; run the
-    full suite once before committing, not after every edit.
+    Implement the minimum Change, run the named GREEN/focused proof, map every
+    Acceptance item to evidence, commit owned files, self-review, and report.
+    The controller owns formatters, linters, type checks, and full suites
+    unless the brief explicitly assigns them.
 
     ## Code Organization
 
@@ -113,27 +116,31 @@ Subagent (general-purpose):
     ## Report Format
 
     Write your full report to [REPORT_FILE]:
-    - What you implemented (or what you attempted, if blocked)
-    - What you tested and test results
-    - **TDD Evidence** (if TDD was required for this task):
-      - RED: command run, relevant failing output before implementation, and why the failure was expected
-      - GREEN: command run and relevant passing output after implementation
-    - Files changed
-    - Self-review findings (if any)
-    - Any issues or concerns
 
-    Then report back with ONLY (under 15 lines — the detail lives in the
-    report file):
-    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
-    - Commits created (short SHA + subject)
-    - One-line test summary (e.g. "14/14 passing, output pristine")
-    - Your concerns, if any
-    - The report file path
+    1. **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+    2. **Implemented:** each Change item and resulting behavior
+    3. **Commands:** exact command, exit code, and decisive output
+    4. **TDD Evidence** (`tdd` only):
+       - RED: pre-edit command, failing assertion/error, why it proves the gap
+       - GREEN: post-edit command and passing assertions
+    5. **Acceptance matrix:**
 
-    If BLOCKED or NEEDS_CONTEXT, put the specifics in the final message
-    itself — the controller acts on it directly.
+       | Acceptance item | Status | Evidence |
+       |---|---|---|
+       | Exact requirement | PASS / FAIL / NOT_RUN | Command/result or file:line |
 
-    Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.
-    Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT if you need
-    information that wasn't provided. Never silently produce work you're unsure about.
+    6. **Files changed**
+    7. **Commits:** short SHA + subject
+    8. **Self-review**
+    9. **Concerns**
+
+    Then report back under 15 lines with status, commits, focused proof
+    summary, concerns, and report path. Detail stays in the report file.
+
+    DONE requires every Acceptance item PASS, required proof complete, and no
+    correctness doubt. DONE_WITH_CONCERNS also requires every item PASS and is
+    only for non-blocking risk. BLOCKED means environment/access/dependency
+    prevented work or proof. NEEDS_CONTEXT means a decision, ownership,
+    behavior, or proof contract is missing. Never return success with FAIL or
+    NOT_RUN items.
 ```
