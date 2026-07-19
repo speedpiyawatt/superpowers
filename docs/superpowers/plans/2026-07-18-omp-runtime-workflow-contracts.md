@@ -21,6 +21,8 @@
 
 ---
 
+## Implementation Tasks
+
 ### Task 1: Persist exact approved-plan identity
 
 **Executor:** `worker`

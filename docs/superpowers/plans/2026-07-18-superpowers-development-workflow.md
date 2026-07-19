@@ -22,6 +22,8 @@
 
 ---
 
+## Implementation Tasks
+
 ### Task 1: Cut over plugin boundary and development router
 
 **Executor:** `worker`
