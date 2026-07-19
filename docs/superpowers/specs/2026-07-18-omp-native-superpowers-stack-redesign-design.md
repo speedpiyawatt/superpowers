@@ -136,11 +136,11 @@ Remove. Native approved-plan execution plus SDD owns this lifecycle. There is no
 
 ### `subagent-driven-development`
 
-Keep as the single approved-plan execution controller. Rewrite it around native `task`, the canonical report schema, local progress state, task review, fix loops, parent integration verification, and final review.
+Keep as the single approved-plan execution controller. Rewrite it around native `task`, proactive `hub` coordination, the canonical report schema, local progress state, task review, fix loops, parent integration verification, and final review.
 
 ### `dispatching-parallel-agents`
 
-Keep as a thin native fan-out procedure. It emits one native `task` batch per independent wave. Parallel writers require disjoint file and mutable-resource ownership. Parent owns shared contracts and combined verification.
+Keep as a thin native fan-out procedure. It emits one native `task` batch per independent wave. Parallel writers require disjoint file and mutable-resource ownership. Workers use `hub` proactively to share dependency results, resolve ownership questions, and warn affected peers about contract-changing discoveries. Parent owns shared contracts and combined verification.
 
 ### `systematic-debugging`
 
@@ -191,6 +191,22 @@ parent | mechanical | integration
 ```
 
 The dispatcher resolves each class against currently configured native agents and required tools. Missing capability blocks dispatch with exact diagnostics; it never silently substitutes an agent.
+
+## Proactive Peer Coordination
+
+OMP's IRC-style peer channel is the native `hub` tool. Do not add or preserve a separate `irc` alias.
+
+SDD workers, reviewers, and parent orchestration receive `hub` when their role may need coordination. They use it proactively when a message can change another active task:
+
+- publish an upstream result a peer is waiting for;
+- resolve suspected ownership or mutable-resource overlap before editing;
+- warn affected peers about a discovered interface, schema, or behavior change;
+- share concise evidence that prevents duplicated investigation;
+- request a parent decision when product, architecture, security, scope, or shared-contract judgment is required.
+
+Messages name the affected task or contract and include only the decision or evidence needed to act. Direct messages use the current peer roster; agents never invent recipients or inspect another session to infer status.
+
+`hub` is not a progress-reporting ceremony. Agents do not send routine status, completion handoffs, polling pings, copied reports, or messages that cannot change another task. Native task completion already delivers results. Parent decisions remain authoritative, and peer coordination cannot expand ownership or change the approved contract.
 
 ## Workflow Artifacts
 
@@ -370,7 +386,8 @@ Cover:
 5. child completion cannot bypass parent acceptance;
 6. blocking review findings force fix and full re-review;
 7. disjoint tasks fan out once while overlapping writers remain sequential;
-8. final review covers the complete recorded branch range.
+8. a worker proactively shares a dependency or contract-impacting discovery through `hub`, while routine progress produces no message;
+9. final review covers the complete recorded branch range.
 
 ### Skill Pressure Tests
 
@@ -409,5 +426,6 @@ The redesign is complete only when:
 - no child completion can bypass parent acceptance;
 - restart and compaction resume the exact approved workflow;
 - active skill files contain no stale tools, agents, schemas, or duplicate owners;
+- active SDD agents use native `hub` for consequential peer coordination without routine-status noise;
 - all active skills have trigger, non-trigger, pressure, and handoff coverage;
 - one full native workflow passes from design through final branch decision.
