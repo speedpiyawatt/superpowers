@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-18
 **Status:** Approved design
-**Scope:** OMP-native Superpowers fork, local OMP runtime integration, and user-agent contracts
+**Scope:** OMP-native Superpowers development cycle, local OMP runtime integration, and development-agent contracts
 
 ## Problem
 
@@ -19,6 +19,7 @@ Observed failures include:
 - parallel-writer rules that differ between SDD and parallel dispatch guidance;
 - plan references that can be lost or replaced by an unsafe newest-file fallback;
 - the installed `superpowers@6.1.1` plugin extension injects a static legacy Pi mapping that denies current native `task`, `hub`, and `todo` capabilities;
+- global `AGENTS.md` applies development-only proof, review, and suite rules to unrelated research sessions;
 - missing published behavioral evals for most skill contracts;
 - long skills that violate the authoring guidance they prescribe.
 
@@ -31,7 +32,7 @@ Observed failures include:
 5. Preserve strong root-cause, RED/GREEN, review-intake, and claim-verification practices without forcing them onto irrelevant work.
 6. Make plan execution resumable after fresh-context approval, compaction, restart, or interrupted agents.
 7. Give every active skill deterministic contract tests and behavioral pressure tests.
-8. Make the installed Superpowers plugin the single OMP-to-skills adapter.
+8. Keep the installed plugin dormant outside software development or explicit skill invocation.
 
 ## Non-Goals
 
@@ -40,67 +41,67 @@ Observed failures include:
 - Building a generic workflow engine beyond the current OMP plan/task/review lifecycle.
 - Requiring permanent repository documentation for every design or experiment.
 - Requiring TDD for tasks whose approved proof mode is verification or experiment.
+- Governing general OMP research, analysis, or multi-agent fan-out.
 
 ## Design Principle
 
-OMP runtime owns mechanics and state. The Superpowers plugin adapter translates OMP capabilities into skill context. Superpowers skills own judgment procedures.
+OMP remains a general research and coding agent. Superpowers activates only for software development work or explicit user invocation. Native OMP owns mechanics and state; Superpowers skills own development judgment procedures.
 
-Runtime enforcement includes plan-mode permissions, artifact storage, approval, session handoff, task batching, isolation, agent validation, state transitions, and structured terminal results. The plugin contributes skills and a compact OMP-native bootstrap. Skills decide when a workflow applies and what evidence is required, but neither plugin nor skills redefine runtime mechanics.
+Runtime enforcement includes plan-mode permissions, artifact storage, approval, session handoff, task batching, isolation, agent validation, state transitions, and structured terminal results. The plugin contributes discoverable skills, not an unconditional workflow bootstrap.
 
 ## Architecture
 
-The workflow has six layers:
+The development workflow has five layers:
 
 1. **Runtime kernel:** native OMP owns permissions, state, task lifecycle, isolation, and session recovery.
-2. **Plugin adapter:** `.pi/extensions/superpowers.ts` exposes bundled skills and injects exact OMP-native capability vocabulary.
-3. **Routing:** `using-superpowers` selects the applicable process skill.
-4. **Decision procedures:** brainstorming, debugging, TDD, review intake, and skill authoring guide judgment.
-5. **Execution control:** native plan mode, `writing-plans`, SDD, native `task`, review, and branch finishing move approved work through enforced states.
-6. **Evidence:** local workflow artifacts, worker reports, reviewer verdicts, command results, and final verification support parent acceptance.
+2. **Development routing:** `using-superpowers` activates only on development intent or explicit invocation.
+3. **Decision procedures:** brainstorming, debugging, TDD, review intake, and skill authoring guide development judgment.
+4. **Execution control:** native plan mode, `writing-plans`, SDD, native `task`, review, and branch finishing move approved development work through enforced states.
+5. **Evidence:** local workflow artifacts, worker reports, reviewer verdicts, command results, and final verification support parent acceptance.
 
-Primary flow:
+Mode boundary:
 
 ```text
-OMP loads superpowers plugin
-  -> plugin discovers skills and injects native bootstrap
-  -> using-superpowers router
-  -> brainstorming or systematic-debugging or receiving-code-review
-  -> native OMP plan mode when implementation planning is needed
-  -> writing-plans task compiler
-  -> native approval
-  -> SDD execution controller
-  -> native task waves and proactive hub coordination
-  -> task reviews
-  -> parent integration verification
-  -> final review
-  -> finishing-a-development-branch
+OMP loads Superpowers skill package
+  |
+  +-- research, analysis, or read-only fan-out
+  |     -> native OMP task batches
+  |     -> scout/researcher agents
+  |     -> proactive hub coordination
+  |     -> source-backed synthesis
+  |     -> no Superpowers development ceremony
+  |
+  `-- software development or explicit skill invocation
+        -> using-superpowers router
+        -> brainstorming or systematic-debugging or receiving-code-review
+        -> native OMP plan mode when implementation planning is needed
+        -> writing-plans task compiler
+        -> native approval
+        -> SDD execution controller
+        -> native task waves and proactive hub coordination
+        -> task reviews
+        -> parent integration verification
+        -> final review
+        -> finishing-a-development-branch
 ```
 
 `writing-skills` remains an authoring workflow entered only when creating or modifying skills.
 
-## OMP Plugin Adapter
+## OMP Plugin Boundary
 
-`superpowers@6.1.1` already declares `.pi/extensions/superpowers.ts` and bundled skills in its package manifest. OMP loads the extension from `pi.extensions` and discovers the adjacent `skills/` directory through the `omp-plugins` provider. Redesign that existing extension; do not add another hook or extension.
+`superpowers@6.1.1` is an installed OMP plugin with bundled skills and `.pi/extensions/superpowers.ts`. OMP's `omp-plugins` provider already discovers the adjacent `skills/` directory from the installed package.
 
-The current `resources_discover` handler is inert because OMP has no session callsite for that event. Remove it and let package discovery remain the single skill-loading path.
+Remove the extension and its `pi.extensions` manifest entry for the OMP-native fork. Its `resources_discover` handler has no runtime callsite, while its unconditional context injection activates development instructions in every session and carries obsolete Pi tool assumptions.
 
-The adapter owns:
+Keep `pi.skills` as the package integration point. OMP's native skill discovery exposes model-invoked descriptions, and explicit `/skill:name` invocation remains available. No additional hook, extension, bootstrap message, or platform-mapping file is required.
 
-- one compact `using-superpowers` bootstrap at session start and after compaction;
-- the workflow-relevant OMP-native vocabulary: `read`, `write`, `edit`, `bash`, `grep`, `glob`, `task`, `hub`, and `todo`;
-- instructions to choose concrete agents from the runtime's Available Agents list;
-- bootstrap marker deduplication and test-only workflow event tracing;
-- compatibility tests against the supported OMP ExtensionAPI.
+The `using-superpowers` description becomes the development eligibility gate. It triggers for repository or code changes, bug fixes, implementation planning, code review, branch completion, and skill authoring. It does not trigger for general research, explanation, source gathering, or read-only multi-agent synthesis unless the user invokes it explicitly.
 
-The adapter uses OMP's current `ExtensionAPI`, not the legacy hook subsystem or obsolete Pi package imports. Remove the separate static `pi-tools.md` mapping so runtime vocabulary has one source of truth.
-
-The bootstrap contains routing and capability facts only. It does not restate skill bodies beyond the short `using-superpowers` router, inject full plans, choose proof modes, accept tasks, or own workflow state.
-
-Native runtime independently persists and re-injects the exact approved-plan reference. Plugin compaction handling restores the Superpowers bootstrap only; it cannot replace runtime recovery.
+Development skills use OMP-native `task`, `hub`, `todo`, `grep`, and `glob` vocabulary directly. Concrete agents are chosen from the runtime's Available Agents list.
 
 ## Canonical Runtime Vocabulary
 
-The runtime exports one contract consumed by prompts, task validation, reports, reviews, and tests.
+The development workflow uses one contract consumed by its prompts, task validation, reports, reviews, and tests.
 
 ```text
 proof_mode:
@@ -131,7 +132,7 @@ Rules:
 
 ### `using-superpowers`
 
-Rewrite as the short trigger router injected once by the plugin adapter at session start and after compaction. It establishes precedence and directs work to applicable process skills. Remove duplicated workflow summaries, platform mappings, and long rationalization tables.
+Rewrite as a short model-invoked development router. Its description carries one trigger per development branch and excludes general research. The body establishes precedence and directs development work to applicable process skills. Remove platform mappings, start-of-every-conversation rules, duplicated workflow summaries, and long rationalization tables.
 
 Key routes:
 
@@ -139,7 +140,7 @@ Key routes:
 - bug, failure, or unexpected behavior -> `systematic-debugging`;
 - review feedback -> `receiving-code-review`;
 - skill creation or modification -> `writing-skills`;
-- claim of completion -> `verification-before-completion`.
+- claim of development completion -> `verification-before-completion`.
 
 ### `brainstorming`
 
@@ -215,45 +216,50 @@ Skills split only when independent invocation or hidden post-completion steps ju
 
 ## Global Agent Contract
 
-Global `AGENTS.md` contains only cross-workflow invariants:
+Global `AGENTS.md` governs every OMP session, so it contains only universal invariants:
 
-- parent owns product decisions, shared contracts, integration, and final verification;
-- children receive scoped executable contracts;
-- one writer owns each path or mutable resource;
-- workers run focused checks; parent runs project-wide checks once;
-- canonical status, proof, severity, and review schemas apply everywhere;
-- child reports are evidence, not acceptance;
-- native `task` and `hub` are the only orchestration and coordination vocabulary.
+- ground load-bearing claims in code, documentation, or executed evidence;
+- batch genuinely independent work through native `task`;
+- maximize parallel read-only research and isolated work;
+- keep one writer per path or mutable resource;
+- keep product, security, architecture, and scope decisions with parent;
+- use `hub` for consequential peer coordination;
+- choose agents from the runtime's Available Agents list;
+- parent synthesizes and spot-checks child evidence before claiming completion.
 
-Skill-specific sequences remain in skills. Runtime-specific agent mappings remain in configuration.
+Move development-only executor tiers, proof modes, RED/GREEN requirements, reviewer gates, full-suite ownership, task-report matrices, and branch lifecycle into Superpowers development skills. Remove the static agent table and duplicated native task lifecycle. Replace dead `job` and `irc` instructions with current `hub` behavior.
 
-Plans name executor capability classes rather than concrete agent IDs:
+Keep the user-specific writing-style section because it intentionally governs every session. Prune it independently under `writing-great-skills`; do not move it into Superpowers.
+
+For research, children receive the question, boundaries, source requirements, and expected deliverable. Research acceptance is source-backed coverage or an executed artifact, not TDD, code review, or a development plan.
+
+For development, the activated Superpowers workflow adds executor capability classes:
 
 ```text
 parent | mechanical | integration
 ```
 
-The dispatcher resolves each class against currently configured native agents and required tools. Missing capability blocks dispatch with exact diagnostics; it never silently substitutes an agent.
+The dispatcher resolves each class against currently configured native agents and required tools. Missing capability blocks development dispatch with exact diagnostics; it never silently substitutes an agent.
 
-## Proactive Peer Coordination
+## Native Peer Coordination
 
-OMP's IRC-style peer channel is the native `hub` tool. Do not add or preserve a separate `irc` alias.
+OMP's peer channel is the native `hub` tool. It serves both research fan-out and Superpowers development work.
 
-SDD workers, reviewers, and parent orchestration receive `hub` when their role may need coordination. They use it proactively when a message can change another active task:
+Peers use it proactively when a message can change another active task:
 
 - publish an upstream result a peer is waiting for;
-- resolve suspected ownership or mutable-resource overlap before editing;
-- warn affected peers about a discovered interface, schema, or behavior change;
+- resolve suspected ownership, source, or mutable-resource overlap;
+- warn affected peers about a discovered interface, schema, behavior, or source-quality issue;
 - share concise evidence that prevents duplicated investigation;
 - request a parent decision when product, architecture, security, scope, or shared-contract judgment is required.
 
 Messages name the affected task or contract and include only the decision or evidence needed to act. Direct messages use the current peer roster; agents never invent recipients or inspect another session to infer status.
 
-`hub` is not a progress-reporting ceremony. Agents do not send routine status, completion handoffs, polling pings, copied reports, or messages that cannot change another task. Native task completion already delivers results. Parent decisions remain authoritative, and peer coordination cannot expand ownership or change the approved contract.
+Native task completion already delivers results. Routine status, completion handoffs, polling pings, and copied reports add no coordination value. Parent decisions remain authoritative, and peer coordination cannot expand ownership or change an approved development contract.
 
 ## Workflow Artifacts
 
-Every approved workflow uses one local artifact tree:
+Every approved development workflow uses one local artifact tree:
 
 ```text
 local://<slug>/
@@ -278,9 +284,9 @@ Ownership:
 
 The exact approved-plan URI and hash are persisted in session metadata. Fresh-context approval copies the complete workflow tree. Compaction injects only the URI and reread requirement. Missing plan, missing pointer, or hash mismatch fails closed. Modification-time fallback is prohibited.
 
-## Plan and Task Contract
+## Development Plan and Task Contract
 
-The canonical plan shape is:
+The canonical development plan shape is:
 
 ```markdown
 # Goal
@@ -418,24 +424,26 @@ The controller never blindly reruns an interrupted task. Reports and reviews are
 
 Cover plan/task parsing, schema validation, DAG errors, ownership overlap, worker completion gates, reviewer severity gates, custom-agent validation, exact plan-reference persistence, restart recovery, compaction recovery, and interactive/ACP approval parity.
 
-### Plugin Adapter Tests
+### Plugin Boundary Tests
 
-Cover package-manifest extension and skill discovery, removal of the inert `resources_discover` handler, one bootstrap injection per session phase, compaction reinjection after summaries, marker deduplication, current workflow tool vocabulary, removal of legacy Pi mapping, and compatibility with the supported OMP ExtensionAPI. Test-only traces record skill reads, `task` calls, `hub` messages, and terminal results without changing production workflow state.
+Cover installed-package skill discovery without extension loading, absence of unconditional bootstrap injection, development-trigger invocation, explicit skill invocation, and research non-invocation. A read-only research prompt must retain native multi-agent fan-out without producing development plans, proof modes, or review gates.
 
 ### Cross-Layer Workflow Tests
 
 Cover:
 
-1. plugin bootstrap routes the agent through native OMP tools without stale Pi fallbacks;
-2. brainstorming blocks implementation before approval;
-3. plan output extracts into a native-task-valid brief;
-4. bugs enter systematic debugging before proof-mode implementation;
-5. TDD requires observed RED/GREEN while other proof modes do not;
-6. child completion cannot bypass parent acceptance;
-7. blocking review findings force fix and full re-review;
-8. disjoint tasks fan out once while overlapping writers remain sequential;
-9. a worker proactively shares a dependency or contract-impacting discovery through `hub`, while routine progress produces no message;
-10. final review covers the complete recorded branch range.
+1. general research fans out through native agents without loading the Superpowers development router;
+2. a development request invokes `using-superpowers` through its model-facing description;
+3. explicit skill invocation still enters the requested development procedure;
+4. brainstorming blocks implementation before approval;
+5. plan output extracts into a native-task-valid brief;
+6. bugs enter systematic debugging before proof-mode implementation;
+7. TDD requires observed RED/GREEN while other proof modes do not;
+8. child completion cannot bypass parent acceptance;
+9. blocking review findings force fix and full re-review;
+10. disjoint development tasks fan out once while overlapping writers remain sequential;
+11. research and development peers share consequential discoveries through `hub`, while routine progress produces no message;
+12. final review covers the complete recorded development branch range.
 
 ### Skill Pressure Tests
 
@@ -455,15 +463,16 @@ Published package includes runnable scenarios. Release notes or references to ab
 
 Use a clean cutover:
 
-1. add canonical runtime schemas and validators;
-2. rewrite the existing Superpowers plugin extension as the OMP adapter;
-3. add unified artifacts, persisted plan pointer, and recovery;
-4. rewrite routing, design, planning, execution, and proof skills;
-5. rewrite review and finishing skills;
-6. remove redundant skills, templates, stale tools, and duplicate dialects;
-7. replace custom agent definitions with runtime-valid contracts;
-8. add deterministic and pressure-test coverage;
-9. smoke-test native plan through branch completion.
+1. narrow global `AGENTS.md` to universal research-and-development invariants;
+2. remove the unconditional Superpowers extension bootstrap while retaining plugin skill discovery;
+3. add canonical development schemas and validators;
+4. add unified development artifacts, persisted plan pointer, and recovery;
+5. rewrite routing, design, planning, execution, and proof skills;
+6. rewrite review and finishing skills;
+7. remove redundant skills, templates, stale tools, and duplicate dialects;
+8. replace custom agent definitions with runtime-valid contracts;
+9. add deterministic, boundary, and pressure-test coverage;
+10. smoke-test both native research fan-out and the complete development cycle.
 
 Do not ship aliases or compatibility shims for removed workflow terms.
 
@@ -471,15 +480,17 @@ Do not ship aliases or compatibility shims for removed workflow terms.
 
 The redesign is complete only when:
 
-- one approved execution plan drives every execution context;
-- every task passes the same parser used by native dispatch;
-- every proof mode produces its required evidence without unrelated ceremony;
-- every worker and reviewer returns canonical structured output;
+- general OMP research can fan out through native agents without loading Superpowers development procedures;
+- software development and explicit invocation enter the correct Superpowers skill;
+- one approved execution plan drives every development execution context;
+- every development task passes the same parser used by native dispatch;
+- every development proof mode produces its required evidence without unrelated ceremony;
+- every development worker and reviewer returns canonical structured output;
 - no child completion can bypass parent acceptance;
-- restart and compaction resume the exact approved workflow;
-- the installed plugin exposes one current OMP-native bootstrap and no legacy Pi tool mapping;
+- restart and compaction resume the exact approved development workflow;
+- global `AGENTS.md` contains no development-only gates, stale tools, or static agent catalog;
 - active skill files contain no stale tools, agents, schemas, or duplicate owners;
-- active SDD agents use native `hub` for consequential peer coordination without routine-status noise;
+- research and development agents use native `hub` for consequential peer coordination without routine-status noise;
 - all active skills have trigger, non-trigger, pressure, and handoff coverage;
 - every edited skill passes the `writing-great-skills` invocation, hierarchy, completion-criterion, pruning, and pressure-test checks;
-- one full native workflow passes from design through final branch decision.
+- one native research fan-out and one full development workflow pass end to end.
