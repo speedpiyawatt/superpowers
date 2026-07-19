@@ -18,6 +18,7 @@ Observed failures include:
 - child-run full-suite instructions conflicting with parent-owned integration verification;
 - parallel-writer rules that differ between SDD and parallel dispatch guidance;
 - plan references that can be lost or replaced by an unsafe newest-file fallback;
+- the installed `superpowers@6.1.1` plugin extension injects a static legacy Pi mapping that denies current native `task`, `hub`, and `todo` capabilities;
 - missing published behavioral evals for most skill contracts;
 - long skills that violate the authoring guidance they prescribe.
 
@@ -30,6 +31,7 @@ Observed failures include:
 5. Preserve strong root-cause, RED/GREEN, review-intake, and claim-verification practices without forcing them onto irrelevant work.
 6. Make plan execution resumable after fresh-context approval, compaction, restart, or interrupted agents.
 7. Give every active skill deterministic contract tests and behavioral pressure tests.
+8. Make the installed Superpowers plugin the single OMP-to-skills adapter.
 
 ## Non-Goals
 
@@ -41,30 +43,33 @@ Observed failures include:
 
 ## Design Principle
 
-OMP runtime owns mechanics and state. Superpowers skills own judgment procedures.
+OMP runtime owns mechanics and state. The Superpowers plugin adapter translates OMP capabilities into skill context. Superpowers skills own judgment procedures.
 
-Runtime enforcement includes plan-mode permissions, artifact storage, approval, session handoff, task batching, isolation, agent validation, state transitions, and structured terminal results. Skills decide when a workflow applies and what evidence is required, but do not redefine runtime mechanics.
+Runtime enforcement includes plan-mode permissions, artifact storage, approval, session handoff, task batching, isolation, agent validation, state transitions, and structured terminal results. The plugin contributes skills and a compact OMP-native bootstrap. Skills decide when a workflow applies and what evidence is required, but neither plugin nor skills redefine runtime mechanics.
 
 ## Architecture
 
-The workflow has four layers:
+The workflow has six layers:
 
-1. **Routing:** `using-superpowers` selects the applicable process skill.
-2. **Decision procedures:** brainstorming, debugging, TDD, review intake, and skill authoring guide judgment.
-3. **Execution control:** native plan mode, `writing-plans`, SDD, native `task`, review, and branch finishing move approved work through enforced states.
-4. **Evidence:** local workflow artifacts, worker reports, reviewer verdicts, command results, and final verification support parent acceptance.
+1. **Runtime kernel:** native OMP owns permissions, state, task lifecycle, isolation, and session recovery.
+2. **Plugin adapter:** `.pi/extensions/superpowers.ts` exposes bundled skills and injects exact OMP-native capability vocabulary.
+3. **Routing:** `using-superpowers` selects the applicable process skill.
+4. **Decision procedures:** brainstorming, debugging, TDD, review intake, and skill authoring guide judgment.
+5. **Execution control:** native plan mode, `writing-plans`, SDD, native `task`, review, and branch finishing move approved work through enforced states.
+6. **Evidence:** local workflow artifacts, worker reports, reviewer verdicts, command results, and final verification support parent acceptance.
 
 Primary flow:
 
 ```text
-user request
+OMP loads superpowers plugin
+  -> plugin discovers skills and injects native bootstrap
   -> using-superpowers router
   -> brainstorming or systematic-debugging or receiving-code-review
   -> native OMP plan mode when implementation planning is needed
   -> writing-plans task compiler
   -> native approval
   -> SDD execution controller
-  -> native task waves
+  -> native task waves and proactive hub coordination
   -> task reviews
   -> parent integration verification
   -> final review
@@ -72,6 +77,26 @@ user request
 ```
 
 `writing-skills` remains an authoring workflow entered only when creating or modifying skills.
+
+## OMP Plugin Adapter
+
+`superpowers@6.1.1` already declares `.pi/extensions/superpowers.ts` and bundled skills in its package manifest. OMP loads the extension from `pi.extensions` and discovers the adjacent `skills/` directory through the `omp-plugins` provider. Redesign that existing extension; do not add another hook or extension.
+
+The current `resources_discover` handler is inert because OMP has no session callsite for that event. Remove it and let package discovery remain the single skill-loading path.
+
+The adapter owns:
+
+- one compact `using-superpowers` bootstrap at session start and after compaction;
+- the workflow-relevant OMP-native vocabulary: `read`, `write`, `edit`, `bash`, `grep`, `glob`, `task`, `hub`, and `todo`;
+- instructions to choose concrete agents from the runtime's Available Agents list;
+- bootstrap marker deduplication and test-only workflow event tracing;
+- compatibility tests against the supported OMP ExtensionAPI.
+
+The adapter uses OMP's current `ExtensionAPI`, not the legacy hook subsystem or obsolete Pi package imports. Remove the separate static `pi-tools.md` mapping so runtime vocabulary has one source of truth.
+
+The bootstrap contains routing and capability facts only. It does not restate skill bodies beyond the short `using-superpowers` router, inject full plans, choose proof modes, accept tasks, or own workflow state.
+
+Native runtime independently persists and re-injects the exact approved-plan reference. Plugin compaction handling restores the Superpowers bootstrap only; it cannot replace runtime recovery.
 
 ## Canonical Runtime Vocabulary
 
@@ -106,7 +131,7 @@ Rules:
 
 ### `using-superpowers`
 
-Rewrite as a short trigger router. It establishes precedence and directs work to applicable process skills. Remove duplicated workflow summaries and long rationalization tables.
+Rewrite as the short trigger router injected once by the plugin adapter at session start and after compaction. It establishes precedence and directs work to applicable process skills. Remove duplicated workflow summaries, platform mappings, and long rationalization tables.
 
 Key routes:
 
@@ -393,19 +418,24 @@ The controller never blindly reruns an interrupted task. Reports and reviews are
 
 Cover plan/task parsing, schema validation, DAG errors, ownership overlap, worker completion gates, reviewer severity gates, custom-agent validation, exact plan-reference persistence, restart recovery, compaction recovery, and interactive/ACP approval parity.
 
+### Plugin Adapter Tests
+
+Cover package-manifest extension and skill discovery, removal of the inert `resources_discover` handler, one bootstrap injection per session phase, compaction reinjection after summaries, marker deduplication, current workflow tool vocabulary, removal of legacy Pi mapping, and compatibility with the supported OMP ExtensionAPI. Test-only traces record skill reads, `task` calls, `hub` messages, and terminal results without changing production workflow state.
+
 ### Cross-Layer Workflow Tests
 
 Cover:
 
-1. brainstorming blocks implementation before approval;
-2. plan output extracts into a native-task-valid brief;
-3. bugs enter systematic debugging before proof-mode implementation;
-4. TDD requires observed RED/GREEN while other proof modes do not;
-5. child completion cannot bypass parent acceptance;
-6. blocking review findings force fix and full re-review;
-7. disjoint tasks fan out once while overlapping writers remain sequential;
-8. a worker proactively shares a dependency or contract-impacting discovery through `hub`, while routine progress produces no message;
-9. final review covers the complete recorded branch range.
+1. plugin bootstrap routes the agent through native OMP tools without stale Pi fallbacks;
+2. brainstorming blocks implementation before approval;
+3. plan output extracts into a native-task-valid brief;
+4. bugs enter systematic debugging before proof-mode implementation;
+5. TDD requires observed RED/GREEN while other proof modes do not;
+6. child completion cannot bypass parent acceptance;
+7. blocking review findings force fix and full re-review;
+8. disjoint tasks fan out once while overlapping writers remain sequential;
+9. a worker proactively shares a dependency or contract-impacting discovery through `hub`, while routine progress produces no message;
+10. final review covers the complete recorded branch range.
 
 ### Skill Pressure Tests
 
@@ -426,13 +456,14 @@ Published package includes runnable scenarios. Release notes or references to ab
 Use a clean cutover:
 
 1. add canonical runtime schemas and validators;
-2. add unified artifacts, persisted plan pointer, and recovery;
-3. rewrite routing, design, planning, execution, and proof skills;
-4. rewrite review and finishing skills;
-5. remove redundant skills, templates, stale tools, and duplicate dialects;
-6. replace custom agent definitions with runtime-valid contracts;
-7. add deterministic and pressure-test coverage;
-8. smoke-test native plan through branch completion.
+2. rewrite the existing Superpowers plugin extension as the OMP adapter;
+3. add unified artifacts, persisted plan pointer, and recovery;
+4. rewrite routing, design, planning, execution, and proof skills;
+5. rewrite review and finishing skills;
+6. remove redundant skills, templates, stale tools, and duplicate dialects;
+7. replace custom agent definitions with runtime-valid contracts;
+8. add deterministic and pressure-test coverage;
+9. smoke-test native plan through branch completion.
 
 Do not ship aliases or compatibility shims for removed workflow terms.
 
@@ -446,6 +477,7 @@ The redesign is complete only when:
 - every worker and reviewer returns canonical structured output;
 - no child completion can bypass parent acceptance;
 - restart and compaction resume the exact approved workflow;
+- the installed plugin exposes one current OMP-native bootstrap and no legacy Pi tool mapping;
 - active skill files contain no stale tools, agents, schemas, or duplicate owners;
 - active SDD agents use native `hub` for consequential peer coordination without routine-status noise;
 - all active skills have trigger, non-trigger, pressure, and handoff coverage;
