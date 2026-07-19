@@ -168,7 +168,25 @@ Keep final integration choices. Require parent verification and approved final r
 
 ### `writing-skills`
 
-Keep trigger-writing, completion-criteria design, match-the-test-to-the-failure guidance, and pressure-testing. Move long references and examples behind explicit reads. Apply its size, trigger, and testing rules to the installed catalog itself.
+Rewrite under the `writing-great-skills` authoring method. Keep only the ordered authoring steps every run needs, with checkable completion criteria. Put branch-specific definitions, examples, and pressure fixtures behind precise context pointers. Apply the same invocation, hierarchy, pruning, and testing rules to this skill itself.
+
+## Skill Authoring Standard
+
+Predictability is the root acceptance property: a skill must drive the same process across runs, not identical output.
+
+Every skill edit classifies invocation first:
+
+- model-invoked when the agent or another skill must reach it autonomously;
+- user-invoked when only explicit human invocation should reach it;
+- a user-invoked router when several user-invoked skills would otherwise overload human recall.
+
+Model-facing descriptions contain one leading trigger per genuine branch. They do not summarize the body or repeat synonyms for the same trigger.
+
+`SKILL.md` contains ordered steps and reference every branch needs. Each step ends with a checkable, and where needed exhaustive, completion criterion. Branch-specific reference moves behind a context pointer whose wording says exactly when to load it. Definitions, rules, and caveats for one concept remain co-located.
+
+Every edit performs a pruning pass for single-source ownership, relevance, no-ops, sediment, duplication, sprawl, and negative steering. Positive target behavior replaces prohibitions unless a hard guardrail requires an explicit ban. Strong leading words replace repeated explanations only when pressure tests show they change behavior.
+
+Skills split only when independent invocation or hidden post-completion steps justify the extra context or cognitive load. File size alone triggers progressive disclosure, not automatic skill proliferation.
 
 ## Global Agent Contract
 
@@ -397,6 +415,9 @@ Every active skill gets:
 - a non-trigger test;
 - a premature-completion pressure test;
 - a next-handoff test.
+- an invocation-classification check for model-invoked, user-invoked, or routed reach;
+- an information-hierarchy check proving branch-only reference loads only when its context pointer fires;
+- a pruning check covering duplication, no-ops, sediment, sprawl, and negative steering.
 
 Published package includes runnable scenarios. Release notes or references to absent evals do not count as coverage.
 
@@ -428,4 +449,5 @@ The redesign is complete only when:
 - active skill files contain no stale tools, agents, schemas, or duplicate owners;
 - active SDD agents use native `hub` for consequential peer coordination without routine-status noise;
 - all active skills have trigger, non-trigger, pressure, and handoff coverage;
+- every edited skill passes the `writing-great-skills` invocation, hierarchy, completion-criterion, pruning, and pressure-test checks;
 - one full native workflow passes from design through final branch decision.
