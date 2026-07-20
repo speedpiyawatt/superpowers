@@ -29,7 +29,6 @@
 
 **Depends on:** none
 **Executor:** `worker`
-**Leaf class:** `integration`
 **Proof mode:** `tdd`
 
 #### Target
@@ -47,12 +46,13 @@
 - Delete obsolete execution records: `/Users/speedzaza/Work/oh-my-pi/.worktrees/omp-dev/.superpowers/sdd/`
 - Modify: `packages/coding-agent/src/modes/{interactive-mode.ts,acp/acp-agent.ts}`
 - Modify: `packages/coding-agent/src/plan-mode/{approved-plan.ts,approved-plan-prompt.test.ts}`
+- Modify: `packages/coding-agent/src/prompts/agents/task.md`
 - Modify: `packages/coding-agent/src/prompts/system/plan-mode-{active,approved,compact-instructions,reference}.md`
 - Modify: `packages/coding-agent/src/session/agent-session.ts`
 - Modify: `packages/coding-agent/src/task/{agents.ts,brief-format.ts,executor.ts,index.ts}`
 - Modify: `packages/coding-agent/src/tools/index.ts`
-- Test: `packages/coding-agent/test/bundled-agent-parsing.test.ts`
-- Test: existing focused plan-mode, task, ACP, and interactive tests affected by removed imports.
+- Test: `packages/coding-agent/test/{bundled-agent-parsing,agent-session-plan-reference-compaction,agent-session-plan-mode-convergence,acp-agent,interactive-mode-plan-review}.test.ts`
+- Test: `packages/coding-agent/test/task/{brief-format,task-batch,executor-warnings}.test.ts`
 
 **Interfaces:**
 - Keeps: `ApprovedPlanReference { planFilePath: string; sha256: string }` and existing exact-plan rehydration.
@@ -76,21 +76,28 @@ expect(output?.optionalProperties?.concerns?.elements).toBeDefined();
 expect(output?.properties?.acceptance).toBeUndefined();
 ```
 
-Add or adapt one focused executor test so a structurally valid `done` result with changed files and no `Owns`, acceptance array, commands, or concerns reaches normal completion instead of returning `report_gate:`.
+Add focused executor and dispatch cases: a structurally valid `done` result with changed files and no `Owns`, acceptance array, commands, or concerns reaches normal completion; a `# Target/# Change/# Acceptance` assignment with no contract metadata dispatches; optional command evidence accepts omitted `output`. In ACP and interactive approval tests, assert approval persists only exact plan identity and creates no `tasks/`, `reports/`, `reviews/`, `progress.json`, or `final-review.json`.
 
 - [ ] **Step 2: Run RED**
 
 Run:
 
 ```bash
-bun test packages/coding-agent/test/bundled-agent-parsing.test.ts packages/coding-agent/test/task/executor-warnings.test.ts
+bun test packages/coding-agent/test/bundled-agent-parsing.test.ts \
+  packages/coding-agent/test/task/brief-format.test.ts \
+  packages/coding-agent/test/task/task-batch.test.ts \
+  packages/coding-agent/test/task/executor-warnings.test.ts \
+  packages/coding-agent/test/acp-agent.test.ts \
+  packages/coding-agent/test/interactive-mode-plan-review.test.ts
 ```
 
 Expected: schema assertion fails on `done_with_concerns`/required evidence, or executor returns `report_gate:`, proving strict workflow policy remains live.
 
 - [ ] **Step 3: Remove overbuilt modules and live hooks**
 
-Delete listed modules/tests/artifacts. Remove their imports, initialization, recovery calls, plan-task parsing, `owns` extraction, and completion-gate invocation from modes, session, task, and tools.
+Delete listed modules, tests, and obsolete records. Remove `initializeWorkflowArtifacts`, `recoverAllWorkflows`, `ensureWorkflowProgressRecovered`, plan-task parsing, graph validation, `owns` extraction, and semantic completion gates from modes, session, task, and tools. Keep `brief-format.ts` only as the fence-aware validator for non-empty `# Target`, `# Change`, `# Acceptance`, and batch `# Goal`, `# Constraints`, `# Contract`; remove contract metadata parsing and dependency/ownership semantics.
+
+Rewrite `prompts/agents/task.md` for the small result shape: child follows Target/Change/Acceptance, preserves unexpected changes, returns `done | blocked | needs_context`, and reports only commands it ran. Parent—not runtime—judges acceptance. Remove `Owns`, `done_with_concerns`, mandatory command output, acceptance-matrix, and report-gate instructions.
 
 Keep existing structural validation and schema-override behavior in `task/executor.ts` unchanged. Delete only the semantic `reportGate` branch: move the existing successful serialization block (`rawOutput`, `exitCode`, and schema-warning assignment) directly under `if (!result.success) { ... } else { ... }`. Do not create a second validator or change malformed-output handling.
 
@@ -118,7 +125,7 @@ const TASK_OUTPUT_SCHEMA = {
 } as const;
 ```
 
-Remove `progress.json`, canonical task-block, ownership, and recovery language from plan prompts. Retain exact `local://<slug>/plan.md`, SHA-backed reread, approval parity, read-only planning, and plan-scout rules.
+Remove `progress.json`, canonical task-block, ownership, and recovery language from plan prompts. Retain exact `local://<slug>/plan.md`, SHA-backed reread, approval parity, read-only planning, and plan-scout rules. Fresh-context continuation must rehydrate and verify that same URI/SHA pair directly; it must not copy or reconstruct a workflow tree, and hash mismatch remains fail-closed.
 
 - [ ] **Step 4: Run GREEN and dead-reference check**
 
@@ -126,6 +133,8 @@ Run:
 
 ```bash
 bun test packages/coding-agent/test/bundled-agent-parsing.test.ts \
+  packages/coding-agent/test/task/brief-format.test.ts \
+  packages/coding-agent/test/task/task-batch.test.ts \
   packages/coding-agent/test/task/executor-warnings.test.ts \
   packages/coding-agent/test/plan-mode/approved-plan.test.ts \
   packages/coding-agent/test/agent-session-plan-reference-compaction.test.ts \
@@ -134,7 +143,7 @@ bun test packages/coding-agent/test/bundled-agent-parsing.test.ts \
   packages/coding-agent/test/interactive-mode-plan-review.test.ts
 ```
 
-Expected: exit 0; exact identity/parity tests pass; ordinary child completion has no semantic report gate.
+Expected: exit 0; assignment dispatches without contract metadata; approval creates no workflow tree; exact identity, fresh-context rehydration, and parity tests pass; ordinary child completion has no semantic report gate.
 
 Run:
 
@@ -142,21 +151,24 @@ Run:
 bunx tsc -p packages/coding-agent/tsconfig.json --noEmit
 ```
 
-Expected: exit 0 and no imports of deleted modules.
+Expected: exit 0 and no imports or prompt references to deleted workflow modules/contracts.
 
 - [ ] **Step 5: Commit**
 
+Stage only files listed under this task’s Target, including deletions; never use `git add -A`. Verify `git diff --cached --name-only` contains no unrelated path, then:
+
 ```bash
-git add -A packages/coding-agent .superpowers/sdd
 git commit -m "refactor(task): remove workflow policy machinery"
 ```
 
 #### Acceptance
 
-- [ ] Exact approved-plan identity survives interactive/ACP approval, compaction, and session reload.
-- [ ] Valid worker completion without `Owns`, commands, or acceptance matrix succeeds.
+- [ ] Exact approved-plan URI/SHA survives interactive/ACP approval, compaction, session reload, and fresh-context continuation; mismatch still fails closed.
+- [ ] Approval and dispatch create no workflow task/report/review/progress tree.
+- [ ] A plain Target/Change/Acceptance assignment dispatches without contract metadata.
+- [ ] Valid worker completion without `Owns`, commands, output excerpts, or acceptance matrix succeeds.
 - [ ] Reviewer output remains structurally typed, but no runtime reviewer policy gate remains.
-- [ ] Deleted runtime modules have no live imports.
+- [ ] Deleted runtime modules, contracts, and prompt instructions have no live references.
 - RED: focused schema/completion command exposes strict gate.
 - GREEN: focused tests and package typecheck exit 0.
 - Escalate when: cleanup would remove exact plan identity, canonical URL normalization, supervisor reply fix, or an unrelated local patch.
@@ -167,7 +179,6 @@ git commit -m "refactor(task): remove workflow policy machinery"
 
 **Depends on:** Task 1
 **Executor:** `worker`
-**Leaf class:** `integration`
 **Proof mode:** `tdd`
 
 #### Target
@@ -180,6 +191,7 @@ git commit -m "refactor(task): remove workflow policy machinery"
 - Modify: `packages/coding-agent/src/eval/backend.ts`
 - Test: `packages/coding-agent/test/internal-urls/local-protocol.test.ts`
 - Test: `packages/coding-agent/test/tools/{plan-mode-guard-local,bash-skill-urls}.test.ts`
+- Test: `packages/coding-agent/test/{write-hashline-header,core/hashline}.test.ts`
 - Test: `packages/coding-agent/test/task/task-batch.test.ts`
 - Test: `packages/coding-agent/src/eval/__tests__/helpers-local-roots.test.ts`
 
@@ -208,10 +220,9 @@ expect(() => assertLocalProtocolWritable("local://feature/plan.md", child))
 expect(() => assertLocalProtocolWritable("local://feature/plan.md", parent)).not.toThrow();
 ```
 
-Add task handoff coverage asserting `runAgent` receives a cloned `localProtocolOptions` with the same root getters and `readOnly: true`, while the parent session options remain writable.
+Add task handoff coverage asserting `runAgent` receives a cloned `localProtocolOptions` with the same root getters and `readOnly: true`, while the parent session options remain writable. Add guard cases with plan mode disabled for authored `local://`, bracketed URI, resolved absolute path under inherited root, delete, and both move endpoints; ordinary worktree targets remain writable.
 
-Add eval coverage asserting `resolveEvalUrlRoots` omits `local` for read-only options.
-Add write-guard coverage for write/edit/delete/move targets, resource-note coverage, and bash expansion coverage asserting the exact read-only URI error.
+Add direct writer, `WriteTool`, hashline edit/delete/move, resource-note, bash expansion, and eval coverage. Every inherited-local mutation must fail before filesystem change; authored URI failures include that exact URI. `resolveEvalUrlRoots` omits `local` for read-only options.
 
 - [ ] **Step 2: Run RED**
 
@@ -220,6 +231,8 @@ bun test packages/coding-agent/test/internal-urls/local-protocol.test.ts \
   packages/coding-agent/test/task/task-batch.test.ts \
   packages/coding-agent/test/tools/plan-mode-guard-local.test.ts \
   packages/coding-agent/test/tools/bash-skill-urls.test.ts \
+  packages/coding-agent/test/write-hashline-header.test.ts \
+  packages/coding-agent/test/core/hashline.test.ts \
   packages/coding-agent/src/eval/__tests__/helpers-local-roots.test.ts
 ```
 
@@ -243,7 +256,9 @@ export function assertLocalProtocolWritable(input: string, options: LocalProtoco
 }
 ```
 
-Call this helper from direct local atomic/exclusive writers. Extend `enforcePlanModeWrite` to check both target and move destination for any `local://` mutation before resolving either path. In `expandInternalUrls`, detect a read-only `local://` token and throw `ToolError` with the same URI/read-only message instead of swallowing the error and leaving the token for shell execution. Omit the local eval root when `readOnly` so eval helpers cannot mutate it; child reads still use native `read` or `tool.read`. When resolving a local resource for display, replace `LOCAL_WRITE_NOTE` with `Inherited parent local:// artifacts are read-only.` for read-only options.
+Call this helper from direct local atomic/exclusive writers. In `enforcePlanModeWrite`, enforce inherited-local read-only access for both target and move destination **before** the existing `getPlanModeState()` early return: when session options are read-only and `targetsLocalSandbox` matches an authored URI, bracketed URI, or resolved absolute path, call `assertLocalProtocolWritable` and preserve its exact input/error. Existing `WriteTool` and `HashlineFilesystem` mutation paths already call this function; focused integration tests must prove write/edit/delete/move cannot bypass it with plan mode disabled. Keep existing plan-mode worktree behavior after this generic access check.
+
+In `expandInternalUrls`, detect a read-only `local://` token and throw `ToolError` with the same URI/read-only message instead of swallowing the error and leaving the token for shell execution. Omit the local eval root when `readOnly` so eval helpers cannot mutate it; child reads still use native `read` or `tool.read`. When resolving a local resource for display, replace `LOCAL_WRITE_NOTE` with `Inherited parent local:// artifacts are read-only.` for read-only options.
 
 In `task/index.ts`, keep parent options unchanged and pass this clone to child creation:
 
@@ -268,7 +283,7 @@ Then use patched CLI/native task in a disposable session:
 4. Parent rereads unchanged content.
 5. Child writes one allowed file inside disposable worktree fixture.
 
-Capture terminal output in the task report; do not create a persistent workflow artifact tree.
+Capture decisive terminal output in parent evidence/chat; do not create a task report or persistent workflow artifact tree.
 
 - [ ] **Step 5: Commit**
 
@@ -281,6 +296,8 @@ git add packages/coding-agent/src/internal-urls/local-protocol.ts \
   packages/coding-agent/test/internal-urls/local-protocol.test.ts \
   packages/coding-agent/test/tools/plan-mode-guard-local.test.ts \
   packages/coding-agent/test/tools/bash-skill-urls.test.ts \
+  packages/coding-agent/test/write-hashline-header.test.ts \
+  packages/coding-agent/test/core/hashline.test.ts \
   packages/coding-agent/test/task/task-batch.test.ts \
   packages/coding-agent/src/eval/__tests__/helpers-local-roots.test.ts
 git commit -m "feat(task): share parent local artifacts read-only"
@@ -302,7 +319,6 @@ git commit -m "feat(task): share parent local artifacts read-only"
 
 **Depends on:** Task 2
 **Executor:** `worker`
-**Leaf class:** `integration`
 **Proof mode:** `verification`
 
 #### Target
@@ -318,12 +334,17 @@ git commit -m "feat(task): share parent local artifacts read-only"
 - Delete: `skills/writing-plans/plan-document-reviewer-prompt.md`
 - Modify: `skills/subagent-driven-development/SKILL.md`
 - Delete: `skills/subagent-driven-development/{implementer-prompt,task-reviewer-prompt}.md`
+- Delete: `skills/subagent-driven-development/scripts/`
 - Modify: `skills/dispatching-parallel-agents/SKILL.md`
 - Delete: `skills/executing-plans/`
 - Delete: `skills/using-git-worktrees/`
 - Replace: `tests/pi/test-pi-extension.mjs`
 - Create: `tests/omp/test-development-routing.mjs`
 - Create: `tests/omp/test-planning-execution-contract.mjs`
+- Delete: `tests/claude-code/{test-sdd-workspace,test-task-brief,test-worktree-native-preference,test-worktree-path-policy}.sh`
+- Delete: `tests/claude-code/{test-subagent-driven-development,test-subagent-driven-development-integration}.sh`
+- Modify: `tests/claude-code/{README.md,run-skill-tests.sh}` to remove deleted test entries and descriptions.
+- Modify: `tests/codex/test-package-codex-plugin.sh`
 
 **Interfaces:**
 - Keeps: `pi.skills: ["./skills"]` and explicit `/skill:name` discovery.
@@ -341,13 +362,13 @@ Tests must assert:
 
 ```text
 package: pi.skills exists; pi.extensions absent; extension file absent
-router positive: code change, bug, review feedback, branch finish, skill edit, explicit invocation
+router positive: code change, bug, review feedback, completion claim, branch finish, skill edit, explicit invocation
 router negative: research, explanation, source gathering, read-only fan-out
 brainstorming: approval gate + written design + self-review; no implementation/commit/worktree control
 writing-plans: Target + Change + observable Acceptance + dependency/escalation when needed
 SDD: native task only; child reads local plan; parent reviews evidence and verifies integration
 parallel dispatch: one batch per independent wave; overlap/dependency stays sequential; hub only for consequential coordination
-removed: executing-plans, mandatory worktree skill, duplicate prompt templates, `.superpowers/sdd` state
+removed: executing-plans, mandatory worktree skill, duplicate prompt templates, SDD task-brief/workspace/review scripts, `.superpowers/sdd` state
 ```
 
 - [ ] **Step 2: Run baseline verification**
@@ -368,7 +389,7 @@ Set package integration exactly:
 }
 ```
 
-Rewrite skill bodies as ordered procedures, not runtime schemas. `writing-plans` may emit executor/proof hints but must not require `Owns`, runtime acceptance arrays, or an execution choice involving deleted `executing-plans`. SDD dispatches native tasks, accepts terminal child output as evidence input, requests scoped review when warranted, and leaves integration claims to parent. Research remains outside this router unless user explicitly invokes a skill.
+Rewrite skill bodies as ordered procedures, not runtime schemas. `using-superpowers` must route a completion claim to `verification-before-completion`. `writing-plans` may emit executor/proof hints but must not require `Owns`, runtime acceptance arrays, or an execution choice involving deleted `executing-plans`. SDD dispatches native tasks, accepts terminal child output as evidence input, requests scoped review when warranted, and leaves integration claims to parent. Research remains outside this router unless user explicitly invokes a skill. Delete SDD parser/workspace/review scripts and remove or invert their package/Claude/Codex tests; no shipped test may require a deleted controller.
 
 - [ ] **Step 4: Run GREEN and package checks**
 
@@ -378,25 +399,27 @@ Run existing package checks:
 
 ```bash
 bash tests/shell-lint/test-lint-shell.sh
+bash tests/codex/test-package-codex-plugin.sh
 cd tests/brainstorm-server && npm test
 ```
 
-Expected: both exit 0.
+Expected: all exit 0; packaged archives contain no deleted SDD controller.
 
 - [ ] **Step 5: Commit**
 
+Stage only files listed under this task’s Target, including deletions; verify `git diff --cached --name-only`, then:
+
 ```bash
-git add -A package.json .pi skills tests/pi tests/omp
 git commit -m "refactor(skills): use native OMP development flow"
 ```
 
 #### Acceptance
 
 - [ ] Installed package discovers skills without unconditional extension injection.
-- [ ] Development and explicit invocation route correctly; research does not.
+- [ ] Development, completion claims, and explicit invocation route correctly; research does not.
 - [ ] One plan artifact and native task path replace duplicate execution/worktree controllers.
+- [ ] SDD parser/workspace/review scripts and every package test requiring them are gone.
 - [ ] Child local handoff uses `local://`, not copies or absolute-path translation.
-- GREEN: focused routing/planning tests and existing package checks exit 0.
 - Escalate when: OMP package discovery does not expose model-invoked descriptions after extension removal.
 
 ---
@@ -405,7 +428,6 @@ git commit -m "refactor(skills): use native OMP development flow"
 
 **Depends on:** Task 3
 **Executor:** `worker`
-**Leaf class:** `integration`
 **Proof mode:** `verification`
 
 #### Target
@@ -467,11 +489,9 @@ Run the baseline command; expect exit 0.
 
 - [ ] **Step 5: Commit**
 
+Stage only files listed under this task’s Target, including deletions; verify `git diff --cached --name-only`, then:
+
 ```bash
-git add -A skills/systematic-debugging skills/test-driven-development \
-  skills/verification-before-completion skills/receiving-code-review \
-  skills/requesting-code-review skills/finishing-a-development-branch \
-  skills/writing-skills tests/omp
 git commit -m "refactor(skills): keep focused development judgment"
 ```
 
@@ -489,7 +509,6 @@ git commit -m "refactor(skills): keep focused development judgment"
 
 **Depends on:** Task 4
 **Executor:** `parent`
-**Leaf class:** `parent`
 **Proof mode:** `verification`
 
 #### Target
@@ -520,9 +539,10 @@ Test these invariants:
 global AGENTS: grounding, native task batching, one writer, parent decisions, consequential hub, runtime agent discovery, preserved writing style
 global AGENTS absent: proof modes, RED/GREEN, reviewer gates, branch lifecycle, static agent table, job/irc, ban on native child local reads
 native child local rule: parent local URI may be read; inherited root is read-only; external/remote handoffs use absolute paths
-enabled agents: current task/hub tools only; read-only roles remain read-only; writer roles can edit; small worker/reviewer schemas
-planner: one parent/mechanical/integration hint taxonomy; no Leaf class/Owns/runtime task-graph requirement
+enabled agents: current task/hub tools only; scout/researcher are read-only; writer roles can edit; small worker/reviewer schemas
+planner: one optional parent/mechanical/integration planning hint taxonomy; no Leaf class/Owns/runtime task-graph requirement
 preserved files/settings: exact pre-edit checksums for APPEND_SYSTEM, rules, config model/memory/disabled sections
+plugin pin: Superpowers Git dependency and `bun.lock` resolve exact full commit SHA; do not infer this from version-only plugin metadata
 ```
 
 Run:
@@ -535,7 +555,7 @@ Expected: fails on current global/local handoff rule and legacy configured-agent
 
 - [ ] **Step 2: Apply smallest configuration edits**
 
-Narrow global policy to universal rules while preserving its writing-style section verbatim. Update only enabled agent definitions. Use current `task` and `hub`; remove `intercom`, `contact_supervisor`, stale progress/report paths, mandatory acceptance/ownership fields, and dual executor/leaf taxonomy. Keep structural output frontmatter valid.
+Narrow global policy to universal rules while preserving its writing-style section verbatim. Update only enabled agent definitions. Use current `task` and `hub`; remove `intercom`, `contact_supervisor`, stale progress/report paths, mandatory acceptance/ownership fields, and dual executor/leaf taxonomy. Remove mutation tools, including `write`/`edit`, from scout and researcher pairs; keep writer tools only on writer roles. Keep structural output frontmatter valid.
 
 - [ ] **Step 3: Verify agent discovery before installation**
 
@@ -560,7 +580,7 @@ bun /Users/speedzaza/Work/oh-my-pi/.worktrees/omp-dev/packages/coding-agent/src/
 bun /Users/speedzaza/Work/oh-my-pi/.worktrees/omp-dev/packages/coding-agent/src/cli.ts plugin list --json
 ```
 
-Expected: install exit 0; lockfile contains full revision; patched CLI starts; installed package has `pi.skills` and no `pi.extensions`.
+Expected: install exit 0; `/Users/speedzaza/.omp/plugins/package.json` and `bun.lock` resolve the exact full Superpowers commit SHA; patched CLI starts; installed package has `pi.skills` and no `pi.extensions`. Do not use version-only `omp-plugins.lock.json` metadata as revision proof.
 
 Restart OMP once after installation so skill metadata and agent definitions reload.
 
@@ -578,8 +598,8 @@ Do not commit `~/.omp/agent` user configuration. Plugin lockfile remains install
 #### Acceptance
 
 - [ ] Universal policy contains no development ceremony and allows native child read-only local handoff.
-- [ ] Enabled agents load with current tools and small schemas; disabled/model/memory settings remain unchanged.
-- [ ] Installed plugin resolves exact passing full revision and no extension bootstrap loads.
+- [ ] Enabled agents load with current `task`/`hub` tools and small schemas; scout/researcher cannot mutate; disabled/model/memory settings remain unchanged.
+- [ ] Installed plugin dependency and package lock resolve exact passing full revision; no extension bootstrap loads.
 - [ ] Patched CLI and plugin listing succeed after install.
 - GREEN: installed-contract test and native agent batch pass.
 - Escalate when: any preserved user-setting checksum changes, package manager resolves another revision, or enabled-agent schema cannot express optional command output.
@@ -590,7 +610,6 @@ Do not commit `~/.omp/agent` user configuration. Plugin lockfile remains install
 
 **Depends on:** Task 5
 **Executor:** `parent`
-**Leaf class:** `parent`
 **Proof mode:** `experiment`
 
 #### Target
