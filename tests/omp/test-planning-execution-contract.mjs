@@ -51,6 +51,41 @@ test('writing-plans emits Target Change Acceptance without Owns or executing-pla
   assert.equal(existsSync(resolve(repoRoot, 'skills/executing-plans')), false);
 });
 
+test('writing-plans previews exact plan HTML before approval and stays non-blocking', async () => {
+  const text = await readSkill('writing-plans');
+  const handoffIdx = text.search(/^## Handoff\b/m);
+  assert.ok(handoffIdx >= 0, 'Handoff section exists');
+  const previewHeadingIdx = text.search(/^## Plan preview\b/m);
+  assert.ok(previewHeadingIdx >= 0, 'Plan preview section exists');
+  assert.ok(previewHeadingIdx < handoffIdx, 'Plan preview section before Handoff');
+  const previewSection = text.slice(previewHeadingIdx, handoffIdx);
+
+  assert.match(previewSection, /preview_export/);
+  assert.match(previewSection, /format:\s*"html"|["']format["']:\s*["']html["']/);
+  assert.match(previewSection, /source:\s*"markdown"|["']source["']:\s*["']markdown["']/);
+  assert.match(previewSection, /open:\s*true|["']open["']:\s*true/);
+  assert.match(previewSection, /re-?read|exact saved|exact .*plan/i);
+  assert.ok(
+    /"markdown"\s*:/.test(previewSection) || /exact saved plan content/i.test(previewSection),
+    'passes exact saved Markdown content, not only a path',
+  );
+  assert.ok(
+    !hasAffirmative(previewSection, /local:\/\/.*preview_export|preview_export.*local:\/\//),
+    'does not send local:// path to preview_export',
+  );
+
+  const previewIdx = previewSection.search(/preview_export/);
+  const thenApprovalIdx = previewSection.search(/then request approval|request (native )?approval/i);
+  assert.ok(previewIdx >= 0 && thenApprovalIdx > previewIdx, 'preview_export before approval request');
+
+  assert.match(previewSection, /warn|warning/i);
+  assert.match(previewSection, /unavailab|fail/i);
+  assert.ok(
+    /never block|do not block|non-blocking|continue to approval/i.test(previewSection),
+    'preview failure must not block approval',
+  );
+});
+
 test('SDD uses native task and local plan handoff only', async () => {
   const text = await readSkill('subagent-driven-development');
 

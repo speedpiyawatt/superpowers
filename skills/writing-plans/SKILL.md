@@ -86,6 +86,26 @@ After drafting:
 
 Fix inline.
 
+## Plan preview
+
+Before native plan approval:
+
+1. Re-read the exact saved plan Markdown.
+2. If `preview_export` is available, call it with:
+
+```json
+{
+  "format": "html",
+  "source": "markdown",
+  "markdown": "<exact saved plan content>",
+  "open": true
+}
+```
+
+Pass exact saved content in `markdown` — not a `local://` path.
+3. Then request approval.
+4. If preview is unavailable or fails, emit one concise warning and continue to approval. Preview must never block plan review.
+
 ## Handoff
 
 After saving `plan.md`, stop for native plan approval. Do not offer inline/`executing-plans` execution. Once approved, parent uses `subagent-driven-development`.
