@@ -9,7 +9,16 @@ Write an executable plan a blank-context worker can follow. Bite-sized tasks. DR
 
 **Announce:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Save to:** parent-writable `local://<slug>/plan.md` (user plan-path preference overrides). This is the sole approved execution artifact after plan approval.
+**Save to:** returned `planFilePath` from plan-mode entry (canonical `local://<slug>/plan.md`; user plan-path preference overrides only via that binding). This is the sole approved execution artifact after plan approval.
+
+## Enter plan mode
+
+Before any codebase research or plan drafting:
+
+1. Choose a safe `<slug>` for this plan.
+2. Write that slug as plain text to `xd://plan`.
+3. Use the returned `planFilePath` as the exact sole save target for `plan.md`.
+4. If entry fails, stop with the actionable error — never continue planning outside plan mode.
 
 ## Scope
 
@@ -103,9 +112,9 @@ Before native plan approval:
 ```
 
 Pass exact saved content in `markdown` — not a `local://` path.
-3. Then request approval.
+3. Then request approval by writing the same slug as plain text to `xd://propose`.
 4. If preview is unavailable or fails, emit one concise warning and continue to approval. Preview must never block plan review.
 
 ## Handoff
 
-After saving `plan.md`, stop for native plan approval. Do not offer inline/`executing-plans` execution. Once approved, parent uses `subagent-driven-development`.
+After saving `plan.md` at the bound `planFilePath` and completing plan preview, stop for native plan approval via `xd://propose` (same slug). Do not offer inline/`executing-plans` execution. Once approved, parent uses `subagent-driven-development`.

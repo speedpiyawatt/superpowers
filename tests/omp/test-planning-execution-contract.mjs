@@ -86,6 +86,71 @@ test('writing-plans previews exact plan HTML before approval and stays non-block
   );
 });
 
+test('writing-plans enters plan mode via xd://plan before research or draft', async () => {
+  const text = await readSkill('writing-plans');
+
+  const enterHeadingIdx = text.search(/^## Enter plan mode\b/m);
+  assert.ok(enterHeadingIdx >= 0, 'Enter plan mode section exists');
+
+  const fileMapIdx = text.search(/^## File map first\b/m);
+  assert.ok(fileMapIdx >= 0, 'File map first section exists');
+  assert.ok(enterHeadingIdx < fileMapIdx, 'Enter plan mode before File map first / research');
+
+  const enterEndCandidates = [
+    text.search(/^## Scope\b/m),
+    fileMapIdx,
+    text.search(/^## Task shape\b/m),
+  ].filter((idx) => idx > enterHeadingIdx);
+  const enterEnd = Math.min(...enterEndCandidates);
+  const enterSection = text.slice(enterHeadingIdx, enterEnd);
+
+  assert.match(enterSection, /\bslug\b/i);
+  assert.match(enterSection, /xd:\/\/plan/);
+  assert.match(enterSection, /plain text|as plain|body is/i);
+  assert.match(enterSection, /planFilePath/);
+  assert.ok(
+    /sole|exact save|save target|returned planFilePath/i.test(enterSection),
+    'uses returned planFilePath as sole/exact save target',
+  );
+  assert.ok(
+    /stop|error|fail|never continue|outside plan mode/i.test(enterSection),
+    'stops with error if plan mode entry fails',
+  );
+
+  // Ordering inside enter section: choose slug → write xd://plan → use planFilePath
+  const slugIdx = enterSection.search(/choose|pick|select/i);
+  const planDeviceIdx = enterSection.search(/xd:\/\/plan/);
+  const pathIdx = enterSection.search(/planFilePath/);
+  assert.ok(slugIdx >= 0 && planDeviceIdx > slugIdx, 'choose slug before writing xd://plan');
+  assert.ok(pathIdx > planDeviceIdx, 'use planFilePath after xd://plan');
+
+  // Mode entry must precede research/drafting markers elsewhere in skill body
+  const researchIdx = text.search(/codebase|research|file map/i);
+  const draftIdx = text.search(/## Task shape\b|## Header\b|draft/i);
+  assert.ok(enterHeadingIdx < researchIdx || enterHeadingIdx < fileMapIdx, 'enter before research');
+  assert.ok(enterHeadingIdx < draftIdx, 'enter before drafting sections');
+
+  // Exact-content HTML preview retained before xd://propose
+  const previewHeadingIdx = text.search(/^## Plan preview\b/m);
+  assert.ok(previewHeadingIdx >= 0, 'Plan preview section retained');
+  const proposeIdx = text.search(/xd:\/\/propose/);
+  assert.ok(proposeIdx >= 0, 'xd://propose present for approval handoff');
+  assert.ok(previewHeadingIdx < proposeIdx, 'exact HTML preview before xd://propose');
+  const previewToPropose = text.slice(previewHeadingIdx, proposeIdx);
+  assert.match(previewToPropose, /preview_export/);
+  assert.match(previewToPropose, /format:\s*"html"|["']format["']:\s*["']html["']/);
+  assert.ok(
+    /"markdown"\s*:/.test(previewToPropose) || /exact saved plan content/i.test(previewToPropose),
+    'preview still passes exact saved Markdown content',
+  );
+
+  // One-way entry only: no exit, goal, vibe, or auto-approval
+  assert.ok(!hasAffirmative(text, /xd:\/\/plan-exit|exit plan mode|leave plan mode/i), 'no mode exit');
+  assert.ok(!hasAffirmative(text, /xd:\/\/goal|enter goal|goal mode/i), 'no goal mode entry');
+  assert.ok(!hasAffirmative(text, /xd:\/\/vibe|enter vibe|vibe mode/i), 'no vibe mode entry');
+  assert.ok(!hasAffirmative(text, /auto-?approv|automatically approv|skip approval/i), 'no auto-approval');
+});
+
 test('SDD uses native task and local plan handoff only', async () => {
   const text = await readSkill('subagent-driven-development');
 
