@@ -14,7 +14,6 @@ const passingSuperpowersCommit = '3115b9a51b17e3351c61e874beebdf1b94aa37af';
 
 const preservedFiles = {
   'APPEND_SYSTEM.md': '2df5299bc8dd454bd639ef6ce3accf1f84f4c87fbbbe18dc422db9b74387b022',
-  'config.yml': '325d73a848835e45f852f8cf61da069981816ae9f331d85f718e8dc711660092',
   'rules/no-cross-agent-local-url.md': '5da0c2516380d204af7a31c19fd739fc23507908d785751b8ce653715b3d7c3f',
   'rules/no-unbounded-filesystem-search.md': 'ffba425c7b3bfb61a71223964edbe8f1f5bbd8a4f7d3d6e0cfda838986df46e6',
   'rules/no-head-without-dash.md': 'a24d5aac9b8950f4b44c03c479c7055cd0e8deb8b1d55557511233cd5106230f',
@@ -140,7 +139,11 @@ test('enabled agents use native tools and small result contracts', async () => {
       assert.match(metadata, /critical:/);
       assert.match(metadata, /important:/);
       assert.match(metadata, /notes:/);
+      assert.match(metadata, /cannot_verify:/);
       assert.doesNotMatch(metadata, /acceptance:|owns:|report-gate|Ready to merge|Minor/i);
+      // prose must require cannot_verify; optional wording is a contract break
+      assert.match(text, /`cannot_verify` array/);
+      assert.doesNotMatch(text, /optional `cannot_verify`/);
     }
   }
 });
@@ -149,6 +152,24 @@ test('disabled agents and preserved user settings are unchanged', async () => {
   for (const [relativePath, expected] of Object.entries(preservedFiles)) {
     const path = `${agentRoot}/${relativePath}`;
     assert.equal(await sha256(path), expected, `changed preserved file: ${relativePath}`);
+  }
+
+  // config.yml is user-mutable; check required sections exist without hashing secrets
+  const config = await readText(`${agentRoot}/config.yml`);
+  assert.match(config, /^modelRoles:\s*$/m, 'config missing modelRoles section');
+  assert.match(config, /^memory:\s*$/m, 'config missing memory section');
+  assert.match(config, /^\s+backend:\s*mnemopi\s*$/m, 'config missing mnemopi memory backend');
+  assert.match(config, /^mnemopi:\s*$/m, 'config missing mnemopi section');
+  assert.match(config, /^\s+disabledAgents:\s*$/m, 'config missing disabledAgents section');
+  for (const agent of [
+    'context-builder',
+    'context-builder-blocking',
+    'delegate',
+    'delegate-blocking',
+    'oracle',
+    'oracle-blocking',
+  ]) {
+    assert.match(config, new RegExp(`^\\s+-\\s+${agent}\\s*$`, 'm'), `config missing disabled agent: ${agent}`);
   }
 });
 
