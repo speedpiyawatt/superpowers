@@ -10,7 +10,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '../..');
 const agentRoot = '/Users/speedzaza/.omp/agent';
 const pluginRoot = '/Users/speedzaza/.omp/plugins';
-const passingSuperpowersCommit = '3115b9a51b17e3351c61e874beebdf1b94aa37af';
+const passingSuperpowersCommit = 'c99ce8a075d2bbf8e80910d0af4b6febd7f06167';
+const markdownPreviewVersion = '0.10.0';
 
 const preservedFiles = {
   'APPEND_SYSTEM.md': '2df5299bc8dd454bd639ef6ce3accf1f84f4c87fbbbe18dc422db9b74387b022',
@@ -95,7 +96,9 @@ async function sha256(path) {
 
 test('global policy is universal and preserves user writing style', async () => {
   const text = await readText(`${agentRoot}/AGENTS.md`);
-  const writingStyle = text.slice(text.indexOf('# Writing style'));
+  const writingStyleIdx = text.indexOf('# Writing style');
+  assert.ok(writingStyleIdx >= 0, 'Writing style section missing');
+  const writingStyle = text.slice(writingStyleIdx);
 
   assert.match(text, /Grounding/);
   assert.match(text, /native `task`/);
@@ -105,6 +108,29 @@ test('global policy is universal and preserves user writing style', async () => 
   assert.match(text, /read-only/);
   assert.doesNotMatch(text, /proof mode|RED\/GREEN|reviewer gate|branch lifecycle|static agent table|job\/irc|intercom|contact_supervisor/i);
   assert.equal(createHash('sha256').update(writingStyle).digest('hex'), '4a8b5c4f70927a1633f4a87d4cae958df3ee07229c947d10c0ca64830d18b46a');
+
+  const vizHeading = text.search(/^## Browser visualization\b/m);
+  assert.ok(vizHeading >= 0, 'Browser visualization section missing');
+  assert.ok(vizHeading < writingStyleIdx, 'Browser visualization must immediately precede Writing style');
+  const between = text.slice(vizHeading, writingStyleIdx);
+  assert.ok(!/^#/m.test(between.slice(between.indexOf('\n') + 1).trimEnd()), 'no heading between Browser visualization and Writing style');
+  const viz = between;
+
+  assert.match(viz, /preview_export/);
+  assert.match(viz, /format:\s*"html"|["']format["']:\s*["']html["']/);
+  assert.match(viz, /source:\s*"markdown"|["']source["']:\s*["']markdown["']/);
+  assert.match(viz, /open:\s*true|["']open["']:\s*true/);
+  assert.match(viz, /exact (saved )?plan|exact .*Markdown/i);
+  assert.match(viz, /before (native )?approval|before approval/i);
+  assert.match(viz, /warn|warning/i);
+  assert.ok(
+    /never block|do not block|non-blocking|continue/i.test(viz),
+    'plan preview failure must not block approval',
+  );
+  assert.match(viz, /without asking|may preview|discretion/i);
+  assert.match(viz, /file|path/i);
+  assert.match(viz, /local:\/\//);
+  assert.match(viz, /routine|short prose|status|tool output/i);
 });
 
 test('enabled agents use native tools and small result contracts', async () => {
@@ -177,13 +203,37 @@ test('plugin source and installed package use exact skills-only revision', async
   const packageJson = JSON.parse(await readText(`${pluginRoot}/package.json`));
   const dependency = packageJson.dependencies?.superpowers;
   assert.equal(dependency, `github:speedpiyawatt/superpowers#${passingSuperpowersCommit}`);
+  assert.equal(packageJson.dependencies?.['pi-markdown-preview'], markdownPreviewVersion);
 
   const lock = await readText(`${pluginRoot}/bun.lock`);
   assert.ok(lock.includes(passingSuperpowersCommit), 'bun.lock lacks full Superpowers revision');
+  assert.ok(
+    lock.includes(`"pi-markdown-preview": "${markdownPreviewVersion}"`) ||
+      lock.includes(`pi-markdown-preview@${markdownPreviewVersion}`),
+    'bun.lock lacks exact pi-markdown-preview 0.10.0 pin',
+  );
 
   const installedManifestPath = `${pluginRoot}/node_modules/superpowers/package.json`;
   assert.ok(existsSync(installedManifestPath), 'installed Superpowers manifest missing');
   const installedManifest = JSON.parse(await readText(installedManifestPath));
   assert.deepEqual(installedManifest.pi, { skills: ['./skills'] });
   assert.equal(installedManifest.pi?.extensions, undefined);
+
+  const previewManifestPath = `${pluginRoot}/node_modules/pi-markdown-preview/package.json`;
+  assert.ok(existsSync(previewManifestPath), 'installed pi-markdown-preview manifest missing');
+  const previewManifest = JSON.parse(await readText(previewManifestPath));
+  assert.equal(previewManifest.version, markdownPreviewVersion);
+  assert.ok(
+    Array.isArray(previewManifest.pi?.extensions) && previewManifest.pi.extensions.length > 0,
+    'pi-markdown-preview must expose extension entry',
+  );
+
+  const installedWritingPlans = await readText(
+    `${pluginRoot}/node_modules/superpowers/skills/writing-plans/SKILL.md`,
+  );
+  assert.match(installedWritingPlans, /^## Plan preview\b/m);
+  assert.match(installedWritingPlans, /preview_export/);
+  assert.match(installedWritingPlans, /format:\s*"html"|["']format["']:\s*["']html["']/);
+  assert.match(installedWritingPlans, /open:\s*true|["']open["']:\s*true/);
+  assert.match(installedWritingPlans, /never block|do not block|non-blocking|continue to approval/i);
 });
