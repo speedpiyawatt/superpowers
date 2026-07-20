@@ -5,40 +5,23 @@ description: Use when two or more tasks can run independently without shared fil
 
 # Dispatching Parallel Agents
 
-## Overview
-
-Use **fan-out**: prove slices independent, dispatch them in one native `task`
-batch, then integrate their evidence. Parallelism is valid only while ownership
-and dependencies remain disjoint.
+Fan out only when slices are truly independent. One native `task` batch per independent wave; integrate evidence after.
 
 ## Process
 
 ### 1. Prove independence
 
-Name each slice's inputs, outputs, owned paths, mutable resources, and required
-upstream results. Group related work into one slice.
+Name each slice's inputs, outputs, writable paths, mutable resources, and upstream needs.
 
-**Complete when:** every pair of slices has disjoint write ownership and mutable
-resources, and no slice needs another slice's result. Read-only slices may share
-inputs.
+**Complete when:** every pair has disjoint write ownership and mutable resources, and no slice needs another's result. Read-only slices may share inputs.
 
-### 2. Choose one agent per slice
+### 2. One agent per slice
 
-| Slice | Agent |
-|---|---|
-| Read-only investigation | `scout` |
-| Locked local transformation with exact proof | `dumb-worker` |
-| Integration, debugging, concurrency, or judgment | `worker` |
+Pick the narrowest capable agent from native `task`'s Available Agents. Parent keeps shared contracts and final verification.
 
-Choose these roles from native `task`'s Available Agents list, using names not
-marked `BLOCKING` for fan-out. Parent owns shared contracts and final verification.
+### 3. One batch per wave
 
-**Complete when:** every slice has the narrowest capable agent and one writer
-owns each path.
-
-### 3. Build one native batch
-
-Shared context has exactly:
+Shared context:
 
 ```text
 # Goal
@@ -46,63 +29,24 @@ Shared context has exactly:
 # Contract
 ```
 
-Each task has exactly:
+Each task:
 
 ```text
 # Target
-Exact cwd/worktree, files, symbols, ownership, and non-goals.
-
 # Change
-One cohesive outcome with ordered behavior or interface changes.
-
 # Acceptance
-Proof mode: tdd | verification | experiment.
-Observable checks, required evidence, and escalation conditions.
 ```
 
-Dispatch all slices in one `task` call:
+Dispatch every independent slice in **one** `task` call. Do not drip-feed the same wave.
 
-```json
-{
-  "context": "# Goal\n...\n# Constraints\n...\n# Contract\n...",
-  "tasks": [
-    {
-      "name": "AuthFailure",
-      "agent": "worker",
-      "task": "# Target\n...\n# Change\n...\n# Acceptance\n..."
-    },
-    {
-      "name": "CacheFailure",
-      "agent": "worker",
-      "task": "# Target\n...\n# Change\n...\n# Acceptance\n..."
-    }
-  ]
-}
-```
+### 4. Sequence when needed
 
-**Complete when:** one valid batch contains every independent slice once.
+Overlap, shared mutable state, or a real dependency collapses those slices to sequential work. Never parallelize writers on the same path.
 
-### 4. Continue and coordinate
+### 5. Coordinate sparsely
 
-Native `task` starts non-blocking agents as background jobs. Continue independent
-parent work. Use `hub` for ownership or contract decisions; wait only when no
-independent parent work remains.
+Native `task` already returns terminal results. Use `hub` only for consequential coordination — ownership conflict, contract change, dependency result that changes active work, or a parent decision. No status spam.
 
-New overlap or dependency collapses affected slices back into sequential work.
+### 6. Integrate
 
-**Complete when:** every child has yielded a terminal structured result.
-
-### 5. Integrate evidence
-
-For each slice:
-
-1. Map every Acceptance item to observed evidence.
-2. Confirm edits stayed inside owned paths.
-3. Resolve failed, `not_run`, blocked, and cannot-verify items.
-4. Run the smallest combined check proving slices coexist.
-
-Run formatter, type checks, and project-wide suites once after writer fan-in.
-
-**Complete when:** all Acceptance items pass, no ownership conflict remains,
-combined behavior is verified, and no required child is still running.
-
+For each slice, map Acceptance to observed evidence, confirm path ownership, resolve failed/blocked/needs_context items, then run the smallest combined check. Package-wide format/type/tests run once after writer fan-in.

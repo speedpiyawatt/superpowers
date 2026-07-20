@@ -1,62 +1,60 @@
 ---
 name: using-superpowers
-description: Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions
+description: Use when the user wants development work — code change, bug fix, review feedback, completion claim, branch finish, skill edit — or explicitly invokes a Superpowers skill. Do not use for pure research, explanation, source gathering, or read-only fan-out.
 ---
 
-<SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, ignore this skill.
-</SUBAGENT-STOP>
+# Using Superpowers
 
-<EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+Route development work to the matching skill. Research and explanation stay outside this flow unless the user explicitly names a skill.
 
-IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+## When this applies
 
-This is not negotiable. You cannot rationalize your way out of this.
-</EXTREMELY-IMPORTANT>
+**Enter this router for:**
 
-## The Rule
+- New behavior, feature, or design work
+- Bug or failing behavior
+- Review feedback to apply
+- Completion, fixed, or passing claims
+- Finishing a development branch
+- Creating or editing a skill
+- Explicit skill invocation (`/skill:name`, "use brainstorming", etc.)
 
-**Invoke relevant or requested skills BEFORE any response or action** — including clarifying questions, exploring the codebase, or checking files. If it turns out wrong for the situation, you don't have to use it.
+**Stay out for:**
 
-**Before entering plan mode:** if you haven't already brainstormed, invoke the brainstorming skill first.
+- Pure research or explanation
+- Source gathering
+- Read-only fan-out with no implementation intent
+- Unrelated tool use that is not development work
 
-Then announce "Using [skill] to [purpose]" and follow the skill exactly. If it has a checklist, create a todo per item.
+If the user explicitly invokes a skill, run that skill even when the surrounding request looks like research.
 
-## Skill Priority
+## Precedence
 
-When multiple skills apply, process skills come first — they set the approach, then implementation skills (frontend-design, etc.) carry it out. Brainstorming and systematic-debugging are Superpowers' most common process skills, but the rule holds for any of them.
+1. User instructions override skills.
+2. Explicit skill invocation wins over inferred routing.
+3. Process skills set the approach before implementation skills run.
 
-- "Let's build X" → superpowers:brainstorming first, then implementation skills.
-- "Fix this bug" → superpowers:systematic-debugging first, then domain skills.
+## Routes
 
-## Red Flags
+| Intent | Skill |
+|--------|-------|
+| New behavior or design | `brainstorming` |
+| Bug or failure | `systematic-debugging` |
+| Review feedback | `receiving-code-review` |
+| Skill create or modify | `writing-skills` |
+| Completion claim | `verification-before-completion` |
+| Branch finish | `finishing-a-development-branch` |
+| Approved design → executable tasks | `writing-plans` |
+| Execute approved plan with native tasks | `subagent-driven-development` |
+| Independent parallel slices | `dispatching-parallel-agents` |
+| Request a review | `requesting-code-review` |
 
-These thoughts mean STOP—you're rationalizing:
+Announce "Using [skill] to [purpose]" and follow that skill exactly.
 
-| Thought | Reality |
-|---------|---------|
-| "This is just a simple question" | Questions are tasks. Check for skills. |
-| "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
-| "This doesn't need a formal skill" | If a skill exists, use it. |
-| "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
+## Rules
 
-## Platform Adaptation
-
-If your harness appears here, read its reference file for special instructions:
-
-- Codex: `references/codex-tools.md`
-- Pi: `references/pi-tools.md`
-- Antigravity: `references/antigravity-tools.md`
-
-## User Instructions
-
-User instructions (CLAUDE.md, AGENTS.md, GEMINI.md, etc, direct requests) take precedence over skills, which in turn override default behavior. Only skip skill workflows or instructions when your human partner has explicitly told you to.
+- Invoke the matched skill before substantive response or edits.
+- Completion claims always route through `verification-before-completion` before any success language, commit, or PR.
+- After brainstorming approval, use `writing-plans`; do not implement from the design directly.
+- After an approved plan, use `subagent-driven-development` with native `task` — not a second execution controller.
+- Subagents executing an assigned task skip this router and follow their assignment.

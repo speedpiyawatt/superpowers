@@ -53,14 +53,11 @@ while [[ $# -gt 0 ]]; do
             echo "  --verbose, -v        Show verbose output"
             echo "  --test, -t NAME      Run only the specified test"
             echo "  --timeout SECONDS    Set timeout per test (default: 300)"
-            echo "  --integration, -i    Run integration tests (slow, 10-30 min)"
+            echo "  --integration, -i    Run integration tests if any are defined"
             echo "  --help, -h           Show this help"
             echo ""
-            echo "Tests:"
-            echo "  test-subagent-driven-development.sh  Test skill loading and requirements"
-            echo ""
-            echo "Integration Tests (use --integration):"
-            echo "  test-subagent-driven-development-integration.sh  Full workflow execution"
+            echo "No Claude Code skill CLI tests are registered after the lean cutover."
+            echo "Focused contract coverage lives in tests/omp/ and tests/pi/."
             exit 0
             ;;
         *)
@@ -71,17 +68,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# List of skill tests to run (fast unit tests)
-tests=(
-    "test-worktree-path-policy.sh"
-    "test-sdd-workspace.sh"
-    "test-subagent-driven-development.sh"
-)
+# Fast unit tests (none retained after controller deletion)
+tests=()
 
-# Integration tests (slow, full execution)
-integration_tests=(
-    "test-subagent-driven-development-integration.sh"
-)
+# Integration tests (none retained after controller deletion)
+integration_tests=()
 
 # Add integration tests if requested
 if [ "$RUN_INTEGRATION" = true ]; then
@@ -97,6 +88,12 @@ fi
 passed=0
 failed=0
 skipped=0
+
+if [ ${#tests[@]} -eq 0 ]; then
+    echo "No Claude Code skill CLI tests registered."
+    echo "Use: node --test tests/pi/test-pi-extension.mjs tests/omp/test-development-routing.mjs tests/omp/test-planning-execution-contract.mjs"
+    echo ""
+fi
 
 # Run each test
 for test in "${tests[@]}"; do
@@ -175,8 +172,8 @@ echo "  Skipped: $skipped"
 echo ""
 
 if [ "$RUN_INTEGRATION" = false ] && [ ${#integration_tests[@]} -gt 0 ]; then
-    echo "Note: Integration tests were not run (they take 10-30 minutes)."
-    echo "Use --integration flag to run full workflow execution tests."
+    echo "Note: Integration tests were not run."
+    echo "Use --integration flag to run them."
     echo ""
 fi
 

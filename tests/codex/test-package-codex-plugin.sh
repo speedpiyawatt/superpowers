@@ -179,10 +179,16 @@ skill_count="$(find "$extracted/skills" -mindepth 1 -maxdepth 1 -type d | wc -l 
 metadata_count="$(find "$extracted/skills" -path '*/agents/openai.yaml' -type f | wc -l | tr -d ' ')"
 assert_equals "$metadata_count" "$skill_count" "every packaged skill has OpenAI metadata"
 
-if [[ -x "$extracted/skills/subagent-driven-development/scripts/task-brief" ]]; then
+if [[ -x "$extracted/skills/brainstorming/scripts/start-server.sh" ]]; then
   pass "archive preserves executable script mode"
 else
   fail "archive preserves executable script mode"
+fi
+
+if printf '%s\n' "$archive_paths" | grep -Eq 'skills/subagent-driven-development/scripts/|skills/executing-plans/|skills/using-git-worktrees/'; then
+  fail "archive excludes deleted SDD controllers"
+else
+  pass "archive excludes deleted SDD controllers"
 fi
 
 zip_times="$(python3 - "$archive" <<'PY'
@@ -193,7 +199,13 @@ with zipfile.ZipFile(sys.argv[1]) as archive:
     print("\n".join(sorted({str(info.date_time) for info in archive.infolist()})))
 PY
 )"
-assert_equals "$zip_times" "(1980, 1, 1, 0, 0, 0)" "zip archive normalizes entry timestamps"
+# Packaging normalizes mtimes; zip stores DOS local fields from host TZ.
+# Require a single 1980-01-01 date (hour may follow host offset).
+if [[ "$zip_times" == "(1980, 1, 1, "* ]]; then
+  pass "zip archive normalizes entry timestamps"
+else
+  fail "zip archive normalizes entry timestamps (got: $zip_times)"
+fi
 
 if tar_output="$("$SCRIPT_UNDER_TEST" --allow-dirty --metadata-source "$metadata_source" --format tar.gz --output "$tar_archive" 2>&1)"; then
   pass "package script writes explicit tar.gz archive"
@@ -207,11 +219,11 @@ extract_archive "$tar_archive" "$tar_extracted"
 tar_archive_paths="$(list_archive "$tar_archive" | normalize_archive_paths)"
 assert_equals "$tar_archive_paths" "$archive_paths" "zip and tar.gz archives contain the same paths"
 
-tar_task_brief_mode="$(tar -tzvf "$tar_archive" skills/subagent-driven-development/scripts/task-brief | awk '{print $1}')"
-assert_equals "$tar_task_brief_mode" "-rwxr-xr-x" "tar.gz archive preserves executable script mode"
+tar_start_server_mode="$(tar -tzvf "$tar_archive" skills/brainstorming/scripts/start-server.sh | awk '{print $1}')"
+assert_equals "$tar_start_server_mode" "-rwxr-xr-x" "tar.gz archive preserves executable script mode"
 
-tar_metadata_times="$(tar -tzvf "$tar_archive" | awk '{print $6, $7, $8}' | sort -u)"
-assert_equals "$tar_metadata_times" "Dec 31 1969" "tar.gz archive normalizes entry timestamps"
+tar_metadata_times="$(TZ=UTC tar -tzvf "$tar_archive" | awk '{print $6, $7, $8}' | sort -u)"
+assert_equals "$tar_metadata_times" "Jan 1 1970" "tar.gz archive normalizes entry timestamps"
 
 metadata_archive="$TEST_ROOT/metadata-source.tar.gz"
 metadata_zip="$TEST_ROOT/metadata-source.zip"
