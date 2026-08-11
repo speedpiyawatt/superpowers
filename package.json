@@ -1,7 +1,7 @@
 {
   "name": "superpowers",
   "version": "6.2.0",
-  "description": "Superpowers skills and runtime bootstrap for coding agents",
+  "description": "Superpowers skills for coding agents",
   "type": "module",
   "main": ".opencode/plugins/superpowers.js",
   "keywords": [
@@ -13,9 +13,6 @@
     "workflow"
   ],
   "pi": {
-    "extensions": [
-      "./.pi/extensions/superpowers.ts"
-    ],
     "skills": [
       "./skills"
     ]
