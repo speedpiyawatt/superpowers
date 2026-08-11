@@ -30,8 +30,8 @@ Execute an approved plan with native `task`. Parent coordinates; children implem
 ## Judgment rules
 
 - **Record BASE before every dispatch** — `git rev-parse HEAD` before the implementer starts; review ranges use the recorded BASE, never `HEAD~1` (which silently truncates multi-commit tasks).
-- **Never dispatch multiple implementation subagents in parallel.** Implementers get disjoint or dependent work; only reviewers may fan out.
-- **Fix loop — max 5 rounds per task.** Rounds 1–3: re-dispatch the original implementer carrying the open findings. Rounds 4–5: dispatch a fresh implementer on a more capable model. Subagent completion is terminal in OMP, so every re-dispatch carries the findings and the prior report file path — the report file is the persistent memory. At the cap, the parent adjudicates each open finding: park with a ruling (reviewer wrong, or real-but-deferred) or STOP and escalate on load-bearing findings.
+- **Parallelism rule.** Disjoint independent tasks may batch as one wave (see `dispatching-parallel-agents`); overlapping or dependent work dispatches sequentially. Within a task's fix loop, never run multiple implementers on the same task in parallel — one implementer owns the task at a time; only reviewers may fan out.
+- **Fix loop — max 5 rounds per task.** Rounds 1–3: re-dispatch the original implementer carrying the open findings. Rounds 4–5: dispatch a fresh implementer on a more capable model. Subagent completion is terminal in OMP, so every re-dispatch carries the findings and the prior result artifact (e.g. `agent://<id>`) — that artifact is the persistent memory. At the cap, the parent adjudicates each open finding: park with a ruling (reviewer wrong, or real-but-deferred) or STOP and escalate on load-bearing findings.
 - **Model tiers.** Cheapest tier for transcription-from-plan tasks (the plan text contains the code); mid-tier floor for reviewers and prose-driven implementers; most capable for architecture work and the final whole-branch review.
 - **The controller never fixes findings itself** — fixes go through a dispatch and a scoped re-review; controller fixes skip review and pollute context.
 
