@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '../..');
 const agentRoot = '/Users/speedzaza/.omp/agent';
 const pluginRoot = '/Users/speedzaza/.omp/plugins';
-const passingSuperpowersCommit = 'f6a6e20dd9f6b7965a4cb4e257da846577d77bf4';
+const passingSuperpowersCommit = '087133bbaeae1631a6adc4dd88730ea3421e0caa';
 const markdownPreviewVersion = '0.10.0';
 
 const preservedFiles = {
