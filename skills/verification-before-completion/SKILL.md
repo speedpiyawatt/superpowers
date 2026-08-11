@@ -118,3 +118,22 @@ Skip any step = lying, not verifying
 - Paraphrases and synonyms
 - Implications of success
 - ANY communication suggesting completion/correctness
+
+## Proof modes (planning guidance)
+
+Proof mode is assignment/plan guidance — not a runtime schema field.
+
+|Mode|Evidence|
+|---|---|
+|`tdd`|Observed RED for expected reason, then minimum GREEN; lasting behavior test. Do not fake RED after the fact.|
+|`verification`|One fresh focused command or scenario. No fabricated RED ceremony.|
+|`experiment`|Execute the probe; keep the result or artifact and the decision rule (ship / retry / abandon).|
+
+This skill gates the **claim**. It does not choose the mode — the task/plan does.
+
+## Actor vs parent
+
+- Your command output supports **your** status summary.
+- **Parent acceptance remains separate** — parent maps Acceptance to evidence and decides integration.
+- Passing focused proof ≠ parent merged/accepted the work.
+- Do not treat this gate as an acceptance matrix, report gate, or persisted verdict.

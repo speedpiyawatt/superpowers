@@ -52,6 +52,8 @@ Confirm before merging: merging into the wrong base is expensive to undo.
 
 ## Step 4: Present Options
 
+**Present this menu only after parent verification and the required final review/approval** — the integration decision belongs to the parent, and it must be made on a verified, reviewed tree.
+
 **Normal repo and named-branch worktree — present exactly these 3 options:**
 
 ```

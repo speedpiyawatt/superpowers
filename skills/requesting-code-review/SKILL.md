@@ -1,95 +1,59 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: Use when completing tasks, finishing a major slice, or needing an ad-hoc review — dispatch a reviewer on a recorded base/current range
 ---
 
 # Requesting Code Review
 
-Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history.
+Request a focused review on exactly what changed. Parent applies policy; this skill supplies range, scope, and vocabulary.
 
-**Core principle:** Review early, review often.
+## Scopes
 
-## When to Request Review
+| Scope | When |
+|-------|------|
+| `task` | After a task slice worth review |
+| `final` | Full change range before branch finish / merge decision |
+| `ad_hoc` | Stuck, risky refactor, or explicit ask |
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+Not every trivial task needs review — parent decides when warranted.
 
-**Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
+## Range
 
-## How to Request
+Use a **recorded** base and current revision for this work (plan start SHA, task start SHA, branch point captured earlier).
 
-**1. Get git SHAs:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
-HEAD_SHA=$(git rev-parse HEAD)
+# Example — SHAs you already recorded, not guessed
+git diff --stat "$BASE_SHA".."$CURRENT_SHA"
+git diff "$BASE_SHA".."$CURRENT_SHA"
 ```
 
-**2. Dispatch code reviewer subagent:**
+**Never** infer the range with `HEAD~1`. If base is unknown, recover it from plan/notes/branch point or ask — do not guess.
 
-Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md](code-reviewer.md)
+## Dispatch
 
-**Placeholders:**
-- `{DESCRIPTION}` - Brief summary of what you built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
-- `{BASE_SHA}` - Starting commit
-- `{HEAD_SHA}` - Ending commit
+Fill [code-reviewer.md](code-reviewer.md) and dispatch a **read-only** reviewer from runtime Available Agents (no static agent catalog in this skill).
 
-**3. Act on feedback:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
+Placeholders: description, plan/requirements, `BASE_SHA`, `CURRENT_SHA`, scope (`task` | `final` | `ad_hoc`).
 
-## Example
+## Vocabulary
 
-```
-[Just completed Task 2: Add verification function]
+Severity: `critical` | `important` | `note`  
+Verdict: `approved` | `approved_with_notes` | `changes_required`
 
-You: Let me request code review before proceeding.
+Parent owns whether findings block merge. Typical handling:
 
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
-HEAD_SHA=$(git rev-parse HEAD)
+- `critical` / `important` → fix, then **full re-review in the same scope**
+- `note` → may remain; no mandatory re-review
 
-[Dispatch code reviewer subagent]
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/superpowers/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
+## After review
 
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
+- Fix blocking items; re-request review on the same scope and range discipline
+- Accepted bugs go through `receiving-code-review` → `systematic-debugging`
+- Do not treat reviewer prose as parent acceptance
 
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
+## Out of scope
 
-## Common Rationalizations
-
-| Excuse | Reality |
-|--------|---------|
-| "I'll just review the diff myself instead of dispatching a reviewer" | You're the coordinator — reviewing the diff inline burns the context window you need to keep driving the work. Dispatch a reviewer subagent: the diff and the evaluation live in its context, and only the findings come back to you. |
-| "The reviewer needs my whole session history to understand the change" | Hand it precisely crafted context, never your session's history. That keeps the reviewer on the work product, not your thought process. |
-
-## Red Flags
-
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
-
-**If reviewer wrong:**
-- Push back with technical reasoning
-- Show code/tests that prove it works
-- Request clarification
-
-See template at: [code-reviewer.md](code-reviewer.md)
+- Runtime report/reviewer gates or persisted verdict files
+- `HEAD~1` range inference
+- Mandatory review of every trivial edit
+- Worktree/merge controllers

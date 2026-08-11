@@ -11,7 +11,7 @@ You delegate tasks to specialized agents with isolated context. By precisely cra
 
 When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
 
-**Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
+**Core principle:** Dispatch one batch per independent wave — group the independent problem domains into a single batch, coordinate via `hub`, and keep overlapping or sequentially dependent work out of parallel dispatch. Each batch is a consequential dispatch: the parent owns the decomposition, and the integration contract is the parent's to enforce.
 
 ## When to Use
 

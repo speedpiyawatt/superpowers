@@ -143,6 +143,8 @@ When feedback IS correct:
 ❌ ANY gratitude expression
 ```
 
+**Accepted bug reports route back through `systematic-debugging`:** establish the root cause, then debug and fix it.
+
 **Why no thanks:** Actions speak. Just fix it. The code itself shows you heard the feedback.
 
 **If you catch yourself about to write "Thanks":** DELETE IT. State the fix instead.
