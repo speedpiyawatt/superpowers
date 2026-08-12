@@ -101,7 +101,7 @@ test('global policy is universal and preserves user writing style', async () => 
   const writingStyle = text.slice(writingStyleIdx);
 
   assert.match(text, /Grounding/);
-  assert.match(text, /native `task`/);
+  assert.match(text, /[Nn]ative `task`/);
   assert.match(text, /`hub`/);
   assert.match(text, /Runtime agent discovery/);
   assert.match(text, /read-only/);
