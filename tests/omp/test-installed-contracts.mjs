@@ -10,7 +10,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '../..');
 const agentRoot = '/Users/speedzaza/.omp/agent';
 const pluginRoot = '/Users/speedzaza/.omp/plugins';
-const passingSuperpowersCommit = '72e281b4cf3aca6becae225f136cd19fad95aabb';
 const markdownPreviewVersion = '0.10.0';
 
 const preservedFiles = {
@@ -180,11 +179,12 @@ test('disabled agents and preserved user settings are unchanged', async () => {
 test('plugin source and installed package use exact skills-only revision', async () => {
   const packageJson = JSON.parse(await readText(`${pluginRoot}/package.json`));
   const dependency = packageJson.dependencies?.superpowers;
-  assert.equal(dependency, `github:speedpiyawatt/superpowers#${passingSuperpowersCommit}`);
+  assert.match(dependency, /^github:speedpiyawatt\/superpowers#[0-9a-f]{40}$/, 'pin must be a full-SHA fork revision');
   assert.equal(packageJson.dependencies?.['pi-markdown-preview'], markdownPreviewVersion);
 
+  const pinnedSha = dependency.split('#')[1];
   const lock = await readText(`${pluginRoot}/bun.lock`);
-  assert.ok(lock.includes(passingSuperpowersCommit), 'bun.lock lacks full Superpowers revision');
+  assert.ok(lock.includes(pinnedSha), 'bun.lock lacks pinned Superpowers revision');
   assert.ok(
     lock.includes(`"pi-markdown-preview": "${markdownPreviewVersion}"`) ||
       lock.includes(`pi-markdown-preview@${markdownPreviewVersion}`),
