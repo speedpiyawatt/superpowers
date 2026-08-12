@@ -96,41 +96,19 @@ async function sha256(path) {
 
 test('global policy is universal and preserves user writing style', async () => {
   const text = await readText(`${agentRoot}/AGENTS.md`);
-  const writingStyleIdx = text.indexOf('# Writing style');
+  const writingStyleIdx = text.indexOf('## Writing Style');
   assert.ok(writingStyleIdx >= 0, 'Writing style section missing');
   const writingStyle = text.slice(writingStyleIdx);
 
   assert.match(text, /Grounding/);
   assert.match(text, /native `task`/);
   assert.match(text, /`hub`/);
-  assert.match(text, /Available Agents/);
-  assert.match(text, /local:\/\//);
+  assert.match(text, /Runtime agent discovery/);
   assert.match(text, /read-only/);
   assert.doesNotMatch(text, /proof mode|RED\/GREEN|reviewer gate|branch lifecycle|static agent table|job\/irc|intercom|contact_supervisor/i);
-  assert.equal(createHash('sha256').update(writingStyle).digest('hex'), '12ed3ef02ab3fa02b10240b58056f89a0e929d5dc8e3786f2fa9fa6fb034ff97');
+  assert.doesNotMatch(text, /preview_export/, 'no browser plan export');
+  assert.equal(createHash('sha256').update(writingStyle).digest('hex'), '97eaf063967478857b8c806773015feec7a42d5e60e1b04b7e92ef1ca83f1516');
 
-  const vizHeading = text.search(/^## Browser visualization\b/m);
-  assert.ok(vizHeading >= 0, 'Browser visualization section missing');
-  assert.ok(vizHeading < writingStyleIdx, 'Browser visualization must immediately precede Writing style');
-  const between = text.slice(vizHeading, writingStyleIdx);
-  assert.ok(!/^#/m.test(between.slice(between.indexOf('\n') + 1).trimEnd()), 'no heading between Browser visualization and Writing style');
-  const viz = between;
-
-  assert.match(viz, /preview_export/);
-  assert.match(viz, /format:\s*"html"|["']format["']:\s*["']html["']/);
-  assert.match(viz, /source:\s*"markdown"|["']source["']:\s*["']markdown["']/);
-  assert.match(viz, /open:\s*true|["']open["']:\s*true/);
-  assert.match(viz, /exact (saved )?plan|exact .*Markdown/i);
-  assert.match(viz, /before (native )?approval|before approval/i);
-  assert.match(viz, /warn|warning/i);
-  assert.ok(
-    /never block|do not block|non-blocking|continue/i.test(viz),
-    'plan preview failure must not block approval',
-  );
-  assert.match(viz, /without asking|may preview|discretion/i);
-  assert.match(viz, /file|path/i);
-  assert.match(viz, /local:\/\//);
-  assert.match(viz, /routine|short prose|status|tool output/i);
 });
 
 test('enabled agents use native tools and small result contracts', async () => {
@@ -231,9 +209,6 @@ test('plugin source and installed package use exact skills-only revision', async
   const installedWritingPlans = await readText(
     `${pluginRoot}/node_modules/superpowers/skills/writing-plans/SKILL.md`,
   );
-  assert.match(installedWritingPlans, /^## Plan preview\b/m);
-  assert.match(installedWritingPlans, /preview_export/);
-  assert.match(installedWritingPlans, /format:\s*"html"|["']format["']:\s*["']html["']/);
-  assert.match(installedWritingPlans, /open:\s*true|["']open["']:\s*true/);
-  assert.match(installedWritingPlans, /never block|do not block|non-blocking|continue to approval/i);
+  assert.doesNotMatch(installedWritingPlans, /^## Plan preview\b/m, 'no plan preview section');
+  assert.doesNotMatch(installedWritingPlans, /preview_export/, 'no browser plan export');
 });

@@ -98,26 +98,8 @@ After drafting:
 
 Fix inline, then re-read the exact saved plan.
 
-## Plan preview
-
-Before requesting approval:
-
-1. Re-read the exact saved `local://<slug>/plan.md` Markdown.
-2. If `preview_export` is available, call it with:
-
-```json
-{
-  "format": "html",
-  "source": "markdown",
-  "markdown": "<exact saved plan content>",
-  "open": true
-}
-```
-
-Pass exact saved content in `markdown`, not a `local://` path. If preview is unavailable or fails, emit one concise warning and continue; preview must never block approval.
-
 ## Handoff
 
-After the plan is reviewed and previewed, write the same `<slug>` as plain text to `xd://propose`. This requests user approval through the root review UI. Do not implement before approval. If the user refines the plan, update the same artifact, preview it again, and resubmit the same slug.
+After the plan is reviewed, write the same `<slug>` as plain text to `xd://propose`. This requests user approval through the root review UI. Do not implement before approval. If the user refines the plan, update the same artifact and resubmit the same slug.
 
 After approval, use `subagent-driven-development` with native `task`. The parent owns dispatch, evidence evaluation, integration, and final verification.
